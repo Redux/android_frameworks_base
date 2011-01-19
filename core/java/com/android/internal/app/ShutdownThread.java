@@ -58,7 +58,7 @@ public final class ShutdownThread extends Thread {
     private static Object sIsStartedGuard = new Object();
     private static boolean sIsStarted = false;
     
-    private static boolean mReboot;
+    private boolean mReboot;
     private static String mRebootReason;
 	
     // Provides shutdown assurance in case the system_server is killed
@@ -105,28 +105,33 @@ public final class ShutdownThread extends Thread {
 				.setIcon(android.R.drawable.ic_dialog_alert)
 				.setTitle(com.android.internal.R.string.reboot_system)
 				.setSingleChoiceItems(com.android.internal.R.array.shutdown_reboot_options, 0, new DialogInterface.OnClickListener() {
-									  public void onClick(DialogInterface dialog, int which) {
-									  if (which < 0)
-									  return;
+					public void onClick(DialogInterface dialog, int which) {
+						if (which < 0)
+							return;
 									  
-									  String actions[] = context.getResources().getStringArray(com.android.internal.R.array.shutdown_reboot_actions);
+						String actions[] = context.getResources().getStringArray(com.android.internal.R.array.shutdown_reboot_actions);
 									  
-									  if (actions != null && which < actions.length)
-									  mRebootReason = actions[which];
-									  }
-									  })
+						if (actions != null && which < actions.length)
+							mRebootReason = actions[which];
+					}
+				})
 				.setPositiveButton(com.android.internal.R.string.yes, new DialogInterface.OnClickListener() {
-								   public void onClick(DialogInterface dialog, int which) {
-								   mReboot = true;
-								   beginShutdownSequence(context);
-								   }
-								   })
+					public void onClick(DialogInterface dialog, int which) {
+						mReboot = true;
+						beginShutdownSequence(context);
+					}
+				})
 				.setNegativeButton(com.android.internal.R.string.no, new DialogInterface.OnClickListener() {
-								   public void onClick(DialogInterface dialog, int which) {
-								   mReboot = false;
-								   dialog.cancel();
-								   }
-								   })
+					public void onClick(DialogInterface dialog, int which) {
+						mReboot = false;
+						dialog.cancel();
+					}
+				})
+				.setOnCancelListener(new DialogInterface.OnCancelListener() {
+					public void onCancel(DialogInterface dialog) {
+						mReboot = false;
+					}
+				})
 				.create();
             } else {
                 dialog = new AlertDialog.Builder(context)
