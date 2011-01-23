@@ -397,7 +397,9 @@ public class StatusBarPolicy {
                      action.equals(ConnectivityManager.INET_CONDITION_ACTION)) {
                 // TODO - stop using other means to get wifi/mobile info
                 updateConnectivity(intent);
-            }
+            } else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
+				updateHeadset(intent);
+			}
         }
     };
 
@@ -446,6 +448,9 @@ public class StatusBarPolicy {
         mService.setIcon("cdma_eri", R.drawable.stat_sys_roaming_cdma_0, 0);
         mService.setIconVisibility("cdma_eri", false);
 
+		mService.setIcon("headset", R.drawable.stat_sys_headset, 0);
+		mService.setIconVisibility("headset", false);
+
         // bluetooth status
         mService.setIcon("bluetooth", R.drawable.stat_sys_data_bluetooth, 0);
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
@@ -487,6 +492,7 @@ public class StatusBarPolicy {
         filter.addAction(Intent.ACTION_POWER_CONNECTED);
         filter.addAction(Intent.ACTION_ALARM_CHANGED);
         filter.addAction(Intent.ACTION_SYNC_STATE_CHANGED);
+		filter.addAction(Intent.ACTION_HEADSET_PLUG);
         filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
         filter.addAction(AudioManager.VIBRATE_SETTING_CHANGED_ACTION);
         filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
@@ -1056,6 +1062,11 @@ public class StatusBarPolicy {
             mVolumeVisible = visible;
         }
     }
+
+	private final void updateHeadset(Intent intent) {
+		int state = intent.getIntExtra("state", 0);
+		mService.setIconVisibility("headset", (state == 1));
+	}
 
     private final void updateBluetooth(Intent intent) {
         int iconId = R.drawable.stat_sys_data_bluetooth;

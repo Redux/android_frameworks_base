@@ -57,8 +57,17 @@ import java.util.Map;
  * The Settings provider contains global system-level device preferences.
  */
 public final class Settings {
-
-    // Intent actions for Settings
+	
+    /**
+     * Intent actions for Settings
+     *
+     * @hide
+     */
+    public static final String SETTINGS_CHANGED = "android.settings.SETTINGS_CHANGED_ACTION";
+	
+    public Settings() {
+        /* Empty for API conflicts */
+    }
 
     /**
      * Activity Action: Show system settings.
@@ -1133,7 +1142,7 @@ public final class Settings {
          * policy, which is to sleep shortly after the turning off
          * according to the {@link #STAY_ON_WHILE_PLUGGED_IN} setting.
          */
-        public static final int WIFI_SLEEP_POLICY_DEFAULT = 0;
+        public static final int WIFI_SLEEP_POLICY_DEFAULT = 2;//0;
 
         /**
          * Value for {@link #WIFI_SLEEP_POLICY} to use the default policy when
@@ -1407,6 +1416,11 @@ public final class Settings {
          * @hide
          */
         public static final String VIBRATE_IN_SILENT = "vibrate_in_silent";
+		
+		/**
+		 @hide
+		 */
+		public static final String VOLUME_CONTROL_SILENT = "volume_control_silent";
 
         /**
          * The mapping of stream type (integer) to its setting.
@@ -1623,6 +1637,8 @@ public final class Settings {
          * boolean (1 or 0).
          */
         public static final String HAPTIC_FEEDBACK_ENABLED = "haptic_feedback_enabled";
+		
+        public static final String HAPTIC_FEEDBACK_ALL_ENABLED = "haptic_feedback_all_enabled";
 
         /**
          * Whether live web suggestions while the user types into search dialogs are
@@ -1638,6 +1654,27 @@ public final class Settings {
          * @hide
          */
         public static final String NOTIFICATION_LIGHT_PULSE = "notification_light_pulse";
+		
+        /**
+         * Whether the notification LED should repeatedly blink when a notification is
+         * pending. The value is boolean (1 or 0).
+         * @hide
+         */
+        public static final String NOTIFICATION_LIGHT_BLINK = "notification_light_blink";
+		
+        /**
+         * Whether to show turn off the notification LED (and charging light
+         * off) when screen is on. The value is boolean (1 or 0).
+         * @hide
+         */
+        public static final String NOTIFICATION_LIGHT_ALWAYS_ON = "notification_light_always_on";
+		
+        /**
+         * Whether to turn on the amber LED while charging (and notifications light off).
+         * The value is boolean (1 or 0).
+         * @hide
+         */
+        public static final String NOTIFICATION_LIGHT_CHARGING = "notification_light_charging";
 
         /**
          * Show pointer location on screen?
@@ -1741,7 +1778,71 @@ public final class Settings {
          * @hide
          */
         public static final String SIP_ASK_ME_EACH_TIME = "SIP_ASK_ME_EACH_TIME";
-
+		
+        /**
+         * Torch state (flashlight)
+         * @hide
+         */
+        public static final String TORCH_STATE = "torch_state";		
+		
+        /**
+         * Whether to wake the screen with the trackball. The value is boolean (1 or 0).
+         * @hide
+         */
+        public static final String TRACKBALL_WAKE_SCREEN = "trackball_wake_screen";
+		
+        /**
+         * Whether to use the lockscreen music controls
+         * @hide
+         */
+        public static final String LOCKSCREEN_MUSIC_CONTROLS = "music_controls";
+		
+        /**
+         * Whether to stick the controls to the lockscreen even if no media is playing
+         * @hide
+         */
+        public static final String LOCKSCREEN_ALWAYS_MUSIC_CONTROLS = "persistent_music_controls";
+        
+		
+        /**
+         * Use the Notification Power Widget? (Who wouldn't!)
+         * @hide
+         */
+        public static final String EXPANDED_VIEW_WIDGET = "expanded_view_widget";
+		
+		/** @hide */
+		public static final String EXPANDED_HIDE_ONCHANGE = "expanded_hide_onchange";
+		
+        /**
+         * Widget Buttons to Use
+         * @hide
+         */
+        public static final String WIDGET_BUTTONS = "expanded_widget_buttons";
+		
+        /** @hide */
+        public static final String EXPANDED_BRIGHTNESS_MODE = "expanded_brightness_mode";
+		
+        /** @hide */
+        public static final String EXPANDED_NETWORK_MODE = "expanded_network_mode";
+		
+        /** @hide */
+        public static final String EXPANDED_SCREENTIMEOUT_MODE = "expanded_screentimeout_mode";
+		
+        /** @hide */
+        public static final String EXPANDED_RING_MODE = "expanded_ring_mode";
+		
+		/** @hide */	
+		public static final String EXPANDED_FLASH_MODE = "expanded_flash_mode";
+		
+		/** @hide */
+		public static final String BATTERY_ICON_STYLE = "battery_percentage";
+		
+		/**
+		 * Keep this updated as new battery icon styles are added
+		 * @hide
+		 */
+		public static final int BATTERY_ICON_STYLE_OPTIONS = 2;
+		
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
@@ -2301,6 +2402,12 @@ public final class Settings {
          * Whether ADB is enabled.
          */
         public static final String ADB_ENABLED = "adb_enabled";
+		
+        /**
+         * Whether to show ADB notifications.
+         * @hide
+         */
+        public static final String ADB_NOTIFY = "adb_notify";
 
         /**
          * Setting to allow mock locations and location provider status to be injected into the
@@ -3465,6 +3572,13 @@ public final class Settings {
          */
         public static final String INET_CONDITION_DEBOUNCE_DOWN_DELAY =
                 "inet_condition_debounce_down_delay";
+		
+        /**
+         * Whether to allow killing of the foreground process by long-pressing
+         * the device's BACK button.
+         * @hide
+         */
+        public static final String KILL_APP_LONGPRESS_BACK = "kill_app_on_longpress_back";
 
         /**
          * @hide

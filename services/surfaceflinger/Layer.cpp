@@ -170,8 +170,8 @@ status_t Layer::setBuffers( uint32_t w, uint32_t h,
     mReqHeight = h;
 
     mSecure = (flags & ISurfaceComposer::eSecure) ? true : false;
+	
     mNeedsBlending = (info.h_alpha - info.l_alpha) > 0;
-
     // we use the red index
     int displayRedSize = displayInfo.getSize(PixelFormatInfo::INDEX_RED);
     int layerRedsize = info.getSize(PixelFormatInfo::INDEX_RED);

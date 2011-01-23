@@ -22,9 +22,11 @@ import com.android.internal.widget.LockPatternUtils;
 import com.android.internal.widget.SlidingTab;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.ColorStateList;
+import android.media.AudioManager;
 import android.text.format.DateFormat;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -68,7 +70,18 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     private TextView mScreenLocked;
     private TextView mEmergencyCallText;
     private Button mEmergencyCallButton;
-
+    private ImageButton mPlayIcon;
+    private ImageButton mPauseIcon;
+    private ImageButton mRewindIcon;
+    private ImageButton mForwardIcon;
+    private AudioManager am = (AudioManager)getContext().getSystemService(Context.AUDIO_SERVICE);
+    private boolean mWasMusicActive = am.isMusicActive();
+    private boolean mIsMusicActive = false;
+     private boolean mLockMusicControls = (Settings.System.getInt(mContext.getContentResolver(),
+	Settings.System.LOCKSCREEN_MUSIC_CONTROLS, 1) == 1);
+private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentResolver(),
+	Settings.System.LOCKSCREEN_ALWAYS_MUSIC_CONTROLS, 1) == 1);
+	
     // current configuration state of keyboard and display
     private int mKeyboardHidden;
     private int mCreationOrientation;
@@ -203,6 +216,12 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         mDate = (TextView) findViewById(R.id.date);
         mStatus1 = (TextView) findViewById(R.id.status1);
         mStatus2 = (TextView) findViewById(R.id.status2);
+		
+
+        mPlayIcon = (ImageButton) findViewById(R.id.musicControlPlay);
+        mPauseIcon = (ImageButton) findViewById(R.id.musicControlPause); 
+        mRewindIcon = (ImageButton) findViewById(R.id.musicControlPrevious); 
+        mForwardIcon = (ImageButton) findViewById(R.id.musicControlNext); 
 
         mScreenLocked = (TextView) findViewById(R.id.screenLocked);
         mSelector = (SlidingTab) findViewById(R.id.tab_selector);
@@ -218,8 +237,49 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
             public void onClick(View v) {
                 mCallback.takeEmergencyCallAction();
             }
+        });	
+        
+        if (mPlayIcon != null) mPlayIcon.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mCallback.pokeWakelock();
+                refreshMusicStatus();
+                if(!am.isMusicActive()) {
+                    mPauseIcon.setVisibility(View.VISIBLE);
+                    mPlayIcon.setVisibility(View.GONE);
+                    mRewindIcon.setVisibility(View.VISIBLE);
+                    mForwardIcon.setVisibility(View.VISIBLE);
+		    sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                }
+            }
         });
 
+        if (mPauseIcon != null) mPauseIcon.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mCallback.pokeWakelock();
+                refreshMusicStatus();
+                if(am.isMusicActive()) {
+                    mPlayIcon.setVisibility(View.VISIBLE);
+                    mPauseIcon.setVisibility(View.GONE);
+                    mRewindIcon.setVisibility(View.GONE);
+                    mForwardIcon.setVisibility(View.GONE);
+		    sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                }
+            }  
+        });
+
+        if (mRewindIcon != null) mRewindIcon.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mCallback.pokeWakelock();
+		sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+             }
+        });
+
+        if (mForwardIcon != null) mForwardIcon.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                mCallback.pokeWakelock();
+		sendMediaButtonEvent(KeyEvent.KEYCODE_MEDIA_NEXT);
+             }
+        });
 
         setFocusable(true);
         setFocusableInTouchMode(true);
@@ -268,6 +328,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         mShowingBatteryInfo = updateMonitor.shouldShowBatteryInfo();
         mPluggedIn = updateMonitor.isDevicePluggedIn();
         mBatteryLevel = updateMonitor.getBatteryLevel();
+	mIsMusicActive = am.isMusicActive();
 
         mStatus = getCurrentStatus(updateMonitor.getSimState());
         updateLayout(mStatus);
@@ -275,6 +336,7 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         refreshBatteryStringAndIcon();
         refreshAlarmDisplay();
 
+	refreshMusicStatus();
         mTimeFormat = DateFormat.getTimeFormat(getContext());
         mDateFormatString = getContext().getString(R.string.full_wday_month_day_no_year);
         refreshTimeAndDateDisplay();
@@ -420,6 +482,41 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
         } else {
             mCharging = getContext().getString(R.string.lockscreen_low_battery);
         }
+    }
+
+    private void refreshMusicStatus() {
+        if (((mWasMusicActive || mIsMusicActive) || mLockAlwaysMusic) && mLockMusicControls) {
+            if(am.isMusicActive()) {
+                if (mPauseIcon != null)mPauseIcon.setVisibility(View.VISIBLE);
+                if (mPlayIcon != null)mPlayIcon.setVisibility(View.GONE);
+                if (mRewindIcon != null)mRewindIcon.setVisibility(View.VISIBLE);
+                if (mForwardIcon != null)mForwardIcon.setVisibility(View.VISIBLE);
+            } else {
+                if (mPlayIcon != null)mPlayIcon.setVisibility(View.VISIBLE);
+                if (mPauseIcon != null)mPauseIcon.setVisibility(View.GONE);
+                if (mRewindIcon != null)mRewindIcon.setVisibility(View.GONE);
+                if (mForwardIcon != null)mForwardIcon.setVisibility(View.GONE);
+            }
+        } else {
+            if (mPlayIcon != null)mPlayIcon.setVisibility(View.GONE);
+            if (mPauseIcon != null)mPauseIcon.setVisibility(View.GONE);
+            if (mRewindIcon != null)mRewindIcon.setVisibility(View.GONE);
+            if (mForwardIcon != null)mForwardIcon.setVisibility(View.GONE);
+        }
+    }
+
+    private void sendMediaButtonEvent(int code) {
+        long eventtime = SystemClock.uptimeMillis();
+        
+        Intent downIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+        KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, code, 0);
+        downIntent.putExtra(Intent.EXTRA_KEY_EVENT, downEvent);
+        getContext().sendOrderedBroadcast(downIntent, null);
+
+        Intent upIntent = new Intent(Intent.ACTION_MEDIA_BUTTON, null);
+        KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, code, 0);
+        upIntent.putExtra(Intent.EXTRA_KEY_EVENT, upEvent);
+        getContext().sendOrderedBroadcast(upIntent, null);
     }
 
     /** {@inheritDoc} */

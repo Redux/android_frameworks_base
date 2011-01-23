@@ -24,6 +24,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.os.BatteryManager;
 import android.os.Binder;
 import android.os.FileUtils;
@@ -119,6 +120,8 @@ class BatteryService extends Binder {
     private int mDischargeStartLevel;
 
     private boolean mSentLowBatteryBroadcast = false;
+	
+	private ContentObserver mStyleObserver;
 
     public BatteryService(Context context) {
         mContext = context;
@@ -130,6 +133,19 @@ class BatteryService extends Binder {
                 com.android.internal.R.integer.config_lowBatteryCloseWarningLevel);
 
         mUEventObserver.startObserving("SUBSYSTEM=power_supply");
+		
+		
+		mStyleObserver = new ContentObserver (null) {
+			@Override
+			public void onChange(boolean selfChange) {
+				sendIntent();
+			}
+		};
+		
+		mContext.getContentResolver().registerContentObserver(
+				Settings.System.getUriFor(Settings.System.BATTERY_ICON_STYLE),
+				false,
+				mStyleObserver);
 
         // set initial status
         update();
@@ -438,15 +454,22 @@ class BatteryService extends Binder {
     }
 
     private final int getIcon(int level) {
+		int style = Settings.System.getInt(mContext.getContentResolver(),
+							Settings.System.BATTERY_ICON_STYLE, 0);
         if (mBatteryStatus == BatteryManager.BATTERY_STATUS_CHARGING) {
-            return com.android.internal.R.drawable.stat_sys_battery_charge;
+			switch (style) {
+			case 0: return com.android.internal.R.drawable.stat_sys_battery_charge;
+			case 1: return com.android.internal.R.drawable.stat_sys_battery_charge_percentage;
+			}
         } else if (mBatteryStatus == BatteryManager.BATTERY_STATUS_DISCHARGING ||
                 mBatteryStatus == BatteryManager.BATTERY_STATUS_NOT_CHARGING ||
                 mBatteryStatus == BatteryManager.BATTERY_STATUS_FULL) {
-            return com.android.internal.R.drawable.stat_sys_battery;
-        } else {
-            return com.android.internal.R.drawable.stat_sys_battery_unknown;
+			switch (style) {
+			case 0: return com.android.internal.R.drawable.stat_sys_battery;
+			case 1: return com.android.internal.R.drawable.stat_sys_battery_percentage;
+			}
         }
+		return com.android.internal.R.drawable.stat_sys_battery_unknown;
     }
 
     @Override

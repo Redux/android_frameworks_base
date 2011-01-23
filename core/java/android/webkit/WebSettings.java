@@ -425,6 +425,11 @@ public class WebSettings {
     public boolean getNavDump() {
         return mNavDump;
     }
+	
+	// setting for zoom controls
+	public void showZoomControls(boolean value) {
+		mWebView.showZoomControls(value);
+	}
 
     /**
      * Set whether the WebView supports zoom

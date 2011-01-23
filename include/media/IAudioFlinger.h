@@ -140,6 +140,8 @@ public:
 
     virtual unsigned int  getInputFramesLost(int ioHandle) = 0;
 
+    virtual status_t setFmVolume(float volume) = 0;
+
     virtual int newAudioSessionId() = 0;
 
     virtual status_t loadEffectLibrary(const char *libPath, int *handle) = 0;

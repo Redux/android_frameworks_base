@@ -68,3 +68,10 @@ PRODUCT_COPY_FILES += \
 	$(LOCAL_PATH)/effects/camera_click.ogg:system/media/audio/ui/camera_click.ogg \
 	$(LOCAL_PATH)/newwavelabs/CrazyDream.ogg:system/media/audio/ringtones/CrazyDream.ogg \
 	$(LOCAL_PATH)/newwavelabs/DreamTheme.ogg:system/media/audio/ringtones/DreamTheme.ogg
+
+#Redux audio files
+PRODUCT_COPY_FILES += \
+	$(LOCAL_PATH)/notifications/Color.ogg:system/media/audio/notifications/Color.ogg \
+	$(LOCAL_PATH)/notifications/Cloud.ogg:system/media/audio/notifications/Cloud.ogg \
+	$(LOCAL_PATH)/ringtones/Enter_the_Nexus.ogg:system/media/audio/ringtones/Enter_the_Nexus.ogg \
+	$(LOCAL_PATH)/Light.ogg:system/media/audio/alarms/Light.ogg

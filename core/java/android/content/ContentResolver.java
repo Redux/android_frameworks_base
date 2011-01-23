@@ -174,6 +174,11 @@ public abstract class ContentResolver {
     public ContentResolver(Context context) {
         mContext = context;
     }
+	
+	/** @hide */
+	public final Context getContext() {
+		return mContext;
+	}
 
     /** @hide */
     protected abstract IContentProvider acquireProvider(Context c, String name);
@@ -201,7 +206,6 @@ public abstract class ContentResolver {
             } catch (RemoteException e) {
                 return null;
             } catch (java.lang.Exception e) {
-                Log.w(TAG, "Failed to get type for: " + url + " (" + e.getMessage() + ")");
                 return null;
             } finally {
                 releaseProvider(provider);
@@ -216,9 +220,6 @@ public abstract class ContentResolver {
             String type = ActivityManagerNative.getDefault().getProviderMimeType(url);
             return type;
         } catch (RemoteException e) {
-            return null;
-        } catch (java.lang.Exception e) {
-            Log.w(TAG, "Failed to get type for: " + url + " (" + e.getMessage() + ")");
             return null;
         }
     }
@@ -1398,11 +1399,9 @@ public abstract class ContentResolver {
 
         @Override
         protected void finalize() throws Throwable {
-            // TODO: integrate CloseGuard support.
             try {
                 if(!mCloseFlag) {
-                    Log.w(TAG, "Cursor finalized without prior close()");
-                    close();
+                    ContentResolver.this.releaseProvider(mContentProvider);
                 }
             } finally {
                 super.finalize();

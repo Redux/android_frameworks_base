@@ -145,6 +145,8 @@ public:
     virtual status_t setVoiceVolume(float volume);
 
     virtual status_t getRenderPosition(uint32_t *halFrames, uint32_t *dspFrames, int output);
+ 
+    virtual status_t setFmVolume(float volume);
 
     virtual int newAudioSessionId();
 
@@ -187,6 +189,7 @@ public:
         AUDIO_HW_SET_MIC_MUTE,
         AUDIO_SET_VOICE_VOLUME,
         AUDIO_SET_PARAMETER,
+        AUDIO_SET_FM_VOLUME
     };
 
     // record interface
@@ -1180,6 +1183,7 @@ private:
                 PlaybackThread::stream_type_t       mStreamTypes[AudioSystem::NUM_STREAM_TYPES];
                 float                               mMasterVolume;
                 bool                                mMasterMute;
+                bool                                mFmOn;
 
                 DefaultKeyedVector< int, sp<RecordThread> >    mRecordThreads;
 
