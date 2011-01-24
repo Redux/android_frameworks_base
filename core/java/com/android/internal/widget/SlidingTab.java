@@ -20,10 +20,12 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.database.ContentObserver;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
@@ -84,6 +86,13 @@ public class SlidingTab extends ViewGroup {
     private Slider mOtherSlider;
     private boolean mAnimating;
     private Rect mTmpRect;
+	
+	private ContentObserver mObserver;
+	/*
+	 true if haptic feedback is enabled
+	 */
+	private boolean mShouldVibrate = true;
+	private Context mContext;
 
     /**
      * Listener used to reset the view when the current animation completes.
@@ -444,6 +453,23 @@ public class SlidingTab extends ViewGroup {
     public SlidingTab(Context context, AttributeSet attrs) {
         super(context, attrs);
 
+		mContext = context;
+
+		mShouldVibrate = Settings.System.getInt(context.getContentResolver(),
+										Settings.System.HAPTIC_FEEDBACK_ENABLED, 1) == 1;
+
+		mObserver = new ContentObserver (null) {
+			@Override
+			public void onChange(boolean selfChange) {
+				updateSettings();
+			}
+		};
+
+		context.getContentResolver().registerContentObserver(
+				Settings.System.getUriFor(Settings.System.HAPTIC_FEEDBACK_ENABLED),
+				false,
+				mObserver);
+
         // Allocate a temporary once that can be used everywhere.
         mTmpRect = new Rect();
 
@@ -466,6 +492,11 @@ public class SlidingTab extends ViewGroup {
 
         // setBackgroundColor(0x80808080);
     }
+
+	private void updateSettings() {
+		mShouldVibrate = Settings.System.getInt(mContext.getContentResolver(),
+										Settings.System.HAPTIC_FEEDBACK_ENABLED, 1) == 1;
+	}
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -525,7 +556,7 @@ public class SlidingTab extends ViewGroup {
             case MotionEvent.ACTION_DOWN: {
                 mTracking = true;
                 mTriggered = false;
-                vibrate(VIBRATE_SHORT);
+                if(mShouldVibrate) vibrate(VIBRATE_SHORT);
                 if (leftHit) {
                     mCurrentSlider = mLeftSlider;
                     mOtherSlider = mRightSlider;
@@ -826,7 +857,7 @@ public class SlidingTab extends ViewGroup {
      * @param whichHandle the handle that triggered the event.
      */
     private void dispatchTriggerEvent(int whichHandle) {
-        vibrate(VIBRATE_LONG);
+        if (mShouldVibrate) vibrate(VIBRATE_LONG);
         if (mOnTriggerListener != null) {
             mOnTriggerListener.onTrigger(this, whichHandle);
         }
