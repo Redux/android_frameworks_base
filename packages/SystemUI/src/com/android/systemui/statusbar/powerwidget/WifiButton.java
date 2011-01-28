@@ -1,12 +1,9 @@
-package com.android.systemui.statusbar.widget;
+package com.android.systemui.statusbar.powerwidget;
 
 import com.android.systemui.R;
-import com.android.systemui.statusbar.widget.PowerButton;
-import com.android.systemui.statusbar.widget.StateTracker;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.wifi.WifiManager;
@@ -15,13 +12,7 @@ import android.util.Log;
 
 public class WifiButton extends PowerButton{
 
-    static WifiButton ownButton = null;
-
     private static final StateTracker sWifiState = new WifiStateTracker();
-
-    public void setupButton(Context context, int position) {
-        currentPosition = position;
-    }
 
     /**
      * Subclass of StateTracker to get/set Wifi state.
@@ -87,30 +78,31 @@ public class WifiButton extends PowerButton{
          */
         private static int wifiStateToFiveState(int wifiState) {
             switch (wifiState) {
-            case WifiManager.WIFI_STATE_DISABLED:
-                return STATE_DISABLED;
-            case WifiManager.WIFI_STATE_ENABLED:
-                return STATE_ENABLED;
-            case WifiManager.WIFI_STATE_DISABLING:
-                return STATE_TURNING_OFF;
-            case WifiManager.WIFI_STATE_ENABLING:
-                return STATE_TURNING_ON;
-            default:
-                return STATE_UNKNOWN;
+                case WifiManager.WIFI_STATE_DISABLED:
+                    return STATE_DISABLED;
+                case WifiManager.WIFI_STATE_ENABLED:
+                    return STATE_ENABLED;
+                case WifiManager.WIFI_STATE_DISABLING:
+                    return STATE_TURNING_OFF;
+                case WifiManager.WIFI_STATE_ENABLING:
+                    return STATE_TURNING_ON;
+                default:
+                    return STATE_UNKNOWN;
             }
         }
     }
 
+    public WifiButton() { mType = BUTTON_WIFI; }
 
-
-    public void updateState(Context context) {
-        currentState = sWifiState.getTriState(context);
-        switch (currentState) {
+    @Override
+    protected void updateState() {
+        mState = sWifiState.getTriState(mView.getContext());
+        switch (mState) {
             case STATE_DISABLED:
-                currentIcon = R.drawable.stat_wifi_off;
+                mIcon = R.drawable.stat_wifi_off;
                 break;
             case STATE_ENABLED:
-                currentIcon = R.drawable.stat_wifi_on;
+                mIcon = R.drawable.stat_wifi_on;
                 break;
             case STATE_INTERMEDIATE:
                 // In the transitional state, the bottom green bar
@@ -119,41 +111,28 @@ public class WifiButton extends PowerButton{
                 // user's intent. This is much easier to see in
                 // sunlight.
                 if (sWifiState.isTurningOn()) {
-                    currentIcon = R.drawable.stat_wifi_on;
+                    mIcon = R.drawable.stat_wifi_on;
                 } else {
-                    currentIcon = R.drawable.stat_wifi_off;
+                    mIcon = R.drawable.stat_wifi_off;
                 }
                 break;
         }
     }
 
+    @Override
+    protected void toggleState() {
+        sWifiState.toggleState(mView.getContext());
+    }
+
+    @Override
     public void onReceive(Context context, Intent intent) {
         sWifiState.onActualStateChange(context, intent);
     }
 
-    public void toggleState(Context context) {
-        int realstate = sWifiState.getActualState(context);
-        sWifiState.toggleState(context);
-    }
-
-
-    public static WifiButton getInstance() {
-        if (ownButton == null) {
-            ownButton = new WifiButton();
-        }
-
-        return ownButton;
-    }
-
     @Override
-    void initButton(int position) {
-    }
-
-    public void toggleState(Context context, int newState) {
-        int curState = sWifiState.getTriState(context);
-        if (curState != STATE_INTERMEDIATE &&
-                curState != newState) {
-            toggleState(context);
-        }
+    protected IntentFilter getBroadcastIntentFilter() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        return filter;
     }
 }

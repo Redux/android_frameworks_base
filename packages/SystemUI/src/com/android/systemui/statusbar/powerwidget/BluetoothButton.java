@@ -1,33 +1,25 @@
-package com.android.systemui.statusbar.widget;
+package com.android.systemui.statusbar.powerwidget;
 
 import com.android.systemui.R;
-import com.android.systemui.statusbar.widget.PowerButton;
-import com.android.systemui.statusbar.widget.StateTracker;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
-import android.util.Log;
 
-public class BluetoothButton extends PowerButton{
+public class BluetoothButton extends PowerButton {
 
     private static final StateTracker sBluetoothState = new BluetoothStateTracker();
 
-    static BluetoothButton ownButton = null;
-
-
-    /**
-     * Subclass of StateTracker to get/set Bluetooth state.
-     */
     private static final class BluetoothStateTracker extends StateTracker {
 
         @Override
         public int getActualState(Context context) {
             BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (mBluetoothAdapter == null) {
-                return PowerButton.STATE_UNKNOWN; // On emulator?
+                return STATE_UNKNOWN; // On emulator?
             }
             return bluetoothStateToFiveState(mBluetoothAdapter
                     .getState());
@@ -71,71 +63,61 @@ public class BluetoothButton extends PowerButton{
          */
         private static int bluetoothStateToFiveState(int bluetoothState) {
             switch (bluetoothState) {
-            case BluetoothAdapter.STATE_OFF:
-                return PowerButton.STATE_DISABLED;
-            case BluetoothAdapter.STATE_ON:
-                return PowerButton.STATE_ENABLED;
-            case BluetoothAdapter.STATE_TURNING_ON:
-                return PowerButton.STATE_TURNING_ON;
-            case BluetoothAdapter.STATE_TURNING_OFF:
-                return PowerButton.STATE_TURNING_OFF;
-            default:
-                return PowerButton.STATE_UNKNOWN;
+                case BluetoothAdapter.STATE_OFF:
+                    return STATE_DISABLED;
+                case BluetoothAdapter.STATE_ON:
+                    return STATE_ENABLED;
+                case BluetoothAdapter.STATE_TURNING_ON:
+                    return STATE_TURNING_ON;
+                case BluetoothAdapter.STATE_TURNING_OFF:
+                    return STATE_TURNING_OFF;
+                default:
+                    return STATE_UNKNOWN;
             }
         }
     }
 
-
-
-    public static BluetoothButton getInstance() {
-        if (ownButton == null) ownButton = new BluetoothButton();
-
-        return ownButton;
-    }
+    public BluetoothButton() { mType = BUTTON_BLUETOOTH; }
 
     @Override
-    void initButton(int position) {
-    }
-
-    @Override
-    public void toggleState(Context context) {
-        sBluetoothState.toggleState(context);
-    }
-
-    @Override
-    public void updateState(Context context) {
-        currentState = sBluetoothState.getTriState(context);
-        switch (currentState) {
-        case PowerButton.STATE_DISABLED:
-            currentIcon = R.drawable.stat_bluetooth_off;
-            break;
-        case PowerButton.STATE_ENABLED:
-            currentIcon = R.drawable.stat_bluetooth_on;
-            break;
-        case PowerButton.STATE_INTERMEDIATE:
-            // In the transitional state, the bottom green bar
-            // shows the tri-state (on, off, transitioning), but
-            // the top dark-gray-or-bright-white logo shows the
-            // user's intent. This is much easier to see in
-            // sunlight.
-            if (sBluetoothState.isTurningOn()) {
-                currentIcon = R.drawable.stat_bluetooth_on;
-            } else {
-                currentIcon = R.drawable.stat_bluetooth_off;
-            }
-            break;
+    protected void updateState() {
+        mState = sBluetoothState.getTriState(mView.getContext());
+        switch (mState) {
+            case STATE_DISABLED:
+                mIcon = R.drawable.stat_bluetooth_off;
+                break;
+            case STATE_ENABLED:
+                mIcon = R.drawable.stat_bluetooth_on;
+                break;
+            case STATE_INTERMEDIATE:
+                // In the transitional state, the bottom green bar
+                // shows the tri-state (on, off, transitioning), but
+                // the top dark-gray-or-bright-white logo shows the
+                // user's intent. This is much easier to see in
+                // sunlight.
+                if (sBluetoothState.isTurningOn()) {
+                    mIcon = R.drawable.stat_bluetooth_on;
+                } else {
+                    mIcon = R.drawable.stat_bluetooth_off;
+                }
+                break;
         }
     }
 
+    @Override
+    public void toggleState() {
+        sBluetoothState.toggleState(mView.getContext());
+    }
+
+    @Override
     public void onReceive(Context context, Intent intent) {
         sBluetoothState.onActualStateChange(context, intent);
     }
 
-    public void toggleState(Context context, int newState) {
-        int curState = sBluetoothState.getTriState(context);
-        if (curState != PowerButton.STATE_INTERMEDIATE &&
-                curState != newState) {
-            toggleState(context);
-        }
+    @Override
+    protected IntentFilter getBroadcastIntentFilter() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        return filter;
     }
 }

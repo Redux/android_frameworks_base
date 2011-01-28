@@ -1,22 +1,21 @@
-package com.android.systemui.statusbar.widget;
 
-import com.android.systemui.statusbar.widget.PowerButton;
+package com.android.systemui.statusbar.powerwidget;
+
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-
 /**
- * The state machine for Wifi and Bluetooth toggling, tracking reality
- * versus the user's intent.
- * 
- * This is necessary because reality moves relatively slowly (turning on
- * &amp; off radio drivers), compared to user's expectations.
+ * The state machine for Wifi and Bluetooth toggling, tracking reality versus
+ * the user's intent. This is necessary because reality moves relatively slowly
+ * (turning on &amp; off radio drivers), compared to user's expectations.
  */
 public abstract class StateTracker {
     // Is the state in the process of changing?
     private boolean mInTransition = false;
+
     private Boolean mActualState = null; // initially not set
+
     private Boolean mIntendedState = null; // initially not set
 
     // Did a toggle request arrive while a state update was
@@ -26,9 +25,9 @@ public abstract class StateTracker {
     private boolean mDeferredStateChangeRequestNeeded = false;
 
     /**
-     * User pressed a button to change the state. Something should
-     * immediately appear to the user afterwards, even if we effectively do
-     * nothing. Their press must be heard.
+     * User pressed a button to change the state. Something should immediately
+     * appear to the user afterwards, even if we effectively do nothing. Their
+     * press must be heard.
      */
     public final void toggleState(Context context) {
         int currentState = getTriState(context);
@@ -65,32 +64,30 @@ public abstract class StateTracker {
     public abstract void onActualStateChange(Context context, Intent intent);
 
     /**
-     * Sets the value that we're now in. To be called from
-     * onActualStateChange.
+     * Sets the value that we're now in. To be called from onActualStateChange.
      * 
-     * @param newState
-     *            one of STATE_DISABLED, STATE_ENABLED, STATE_TURNING_ON,
+     * @param newState one of STATE_DISABLED, STATE_ENABLED, STATE_TURNING_ON,
      *            STATE_TURNING_OFF, STATE_UNKNOWN
      */
     protected final void setCurrentState(Context context, int newState) {
         final boolean wasInTransition = mInTransition;
         switch (newState) {
-        case PowerButton.STATE_DISABLED:
-            mInTransition = false;
-            mActualState = false;
-            break;
-        case PowerButton.STATE_ENABLED:
-            mInTransition = false;
-            mActualState = true;
-            break;
-        case PowerButton.STATE_TURNING_ON:
-            mInTransition = true;
-            mActualState = false;
-            break;
-        case PowerButton.STATE_TURNING_OFF:
-            mInTransition = true;
-            mActualState = true;
-            break;
+            case PowerButton.STATE_DISABLED:
+                mInTransition = false;
+                mActualState = false;
+                break;
+            case PowerButton.STATE_ENABLED:
+                mInTransition = false;
+                mActualState = true;
+                break;
+            case PowerButton.STATE_TURNING_ON:
+                mInTransition = true;
+                mActualState = false;
+                break;
+            case PowerButton.STATE_TURNING_OFF:
+                mInTransition = true;
+                mActualState = true;
+                break;
         }
 
         if (wasInTransition && !mInTransition) {
@@ -109,8 +106,8 @@ public abstract class StateTracker {
     }
 
     /**
-     * If we're in a transition mode, this returns true if we're
-     * transitioning towards being enabled.
+     * If we're in a transition mode, this returns true if we're transitioning
+     * towards being enabled.
      */
     public final boolean isTurningOn() {
         return mIntendedState != null && mIntendedState;
@@ -123,16 +120,15 @@ public abstract class StateTracker {
      * @return STATE_ENABLED, STATE_DISABLED, or STATE_INTERMEDIATE
      */
     public final int getTriState(Context context) {
-        /*if (mInTransition) {
-            // If we know we just got a toggle request recently
-            // (which set mInTransition), don't even ask the
-            // underlying interface for its state. We know we're
-            // changing. This avoids blocking the UI thread
-            // during UI refresh post-toggle if the underlying
-            // service state accessor has coarse locking on its
-            // state (to be fixed separately).
-            return PowerButton.STATE_INTERMEDIATE;
-        }*/
+        /*
+         * if (mInTransition) { // If we know we just got a toggle request
+         * recently // (which set mInTransition), don't even ask the //
+         * underlying interface for its state. We know we're // changing. This
+         * avoids blocking the UI thread // during UI refresh post-toggle if the
+         * underlying // service state accessor has coarse locking on its //
+         * state (to be fixed separately). return
+         * PowerButton.STATE_INTERMEDIATE; }
+         */
         switch (getActualState(context)) {
             case PowerButton.STATE_DISABLED:
                 return PowerButton.STATE_DISABLED;
@@ -147,14 +143,13 @@ public abstract class StateTracker {
      * Gets underlying actual state.
      * 
      * @param context
-     * @return STATE_ENABLED, STATE_DISABLED, STATE_ENABLING,
-     *         STATE_DISABLING, or or STATE_UNKNOWN.
+     * @return STATE_ENABLED, STATE_DISABLED, STATE_ENABLING, STATE_DISABLING,
+     *         or or STATE_UNKNOWN.
      */
     public abstract int getActualState(Context context);
 
     /**
      * Actually make the desired change to the underlying radio API.
      */
-    protected abstract void requestStateChange(Context context,
-            boolean desiredState);
+    protected abstract void requestStateChange(Context context, boolean desiredState);
 }

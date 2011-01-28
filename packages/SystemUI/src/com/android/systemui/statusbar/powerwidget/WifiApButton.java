@@ -1,20 +1,16 @@
-package com.android.systemui.statusbar.widget;
+package com.android.systemui.statusbar.powerwidget;
 
 import com.android.systemui.R;
-import com.android.systemui.statusbar.widget.PowerButton;
-import com.android.systemui.statusbar.widget.StateTracker;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.util.Log;
 
 public class WifiApButton extends PowerButton {
-
-    static WifiApButton ownButton = null;
-
 
     private static final StateTracker sWifiApState = new WifiApStateTracker();
 
@@ -29,7 +25,7 @@ public class WifiApButton extends PowerButton {
             if (wifiManager != null) {
                 return wifiApStateToFiveState(wifiManager.getWifiApState());
             }
-            return PowerButton.STATE_UNKNOWN;
+            return STATE_UNKNOWN;
         }
 
         @Override
@@ -86,67 +82,61 @@ public class WifiApButton extends PowerButton {
          */
         private static int wifiApStateToFiveState(int wifiState) {
             switch (wifiState) {
-            case WifiManager.WIFI_AP_STATE_DISABLED:
-                return PowerButton.STATE_DISABLED;
-            case WifiManager.WIFI_AP_STATE_ENABLED:
-                return PowerButton.STATE_ENABLED;
-            case WifiManager.WIFI_AP_STATE_DISABLING:
-                return PowerButton.STATE_TURNING_OFF;
-            case WifiManager.WIFI_AP_STATE_ENABLING:
-                return PowerButton.STATE_TURNING_ON;
-            default:
-                return PowerButton.STATE_UNKNOWN;
+                case WifiManager.WIFI_AP_STATE_DISABLED:
+                    return STATE_DISABLED;
+                case WifiManager.WIFI_AP_STATE_ENABLED:
+                    return STATE_ENABLED;
+                case WifiManager.WIFI_AP_STATE_DISABLING:
+                    return STATE_TURNING_OFF;
+                case WifiManager.WIFI_AP_STATE_ENABLING:
+                    return STATE_TURNING_ON;
+                default:
+                    return STATE_UNKNOWN;
             }
         }
     }
 
+    public WifiApButton() { mType = BUTTON_WIFIAP; }
 
-
-    public void updateState(Context context) {
-
-        currentState = sWifiApState.getTriState(context);
-        switch (currentState) {
-        case PowerButton.STATE_DISABLED:
-            currentIcon = R.drawable.stat_wifi_ap_off;
-            break;
-        case PowerButton.STATE_ENABLED:
-            currentIcon = R.drawable.stat_wifi_ap_on;
-            break;
-        case PowerButton.STATE_INTERMEDIATE:
-            // In the transitional state, the bottom green bar
-            // shows the tri-state (on, off, transitioning), but
-            // the top dark-gray-or-bright-white logo shows the
-            // user's intent. This is much easier to see in
-            // sunlight.
-            if (sWifiApState.isTurningOn()) {
-                currentIcon = R.drawable.stat_wifi_ap_on;
-            } else {
-                currentIcon = R.drawable.stat_wifi_ap_off;
-            }
-            break;
+    @Override
+    protected void updateState() {
+        mState = sWifiApState.getTriState(mView.getContext());
+        switch (mState) {
+            case STATE_DISABLED:
+                mIcon = R.drawable.stat_wifi_ap_off;
+                break;
+            case STATE_ENABLED:
+                mIcon = R.drawable.stat_wifi_ap_on;
+                break;
+            case STATE_INTERMEDIATE:
+                // In the transitional state, the bottom green bar
+                // shows the tri-state (on, off, transitioning), but
+                // the top dark-gray-or-bright-white logo shows the
+                // user's intent. This is much easier to see in
+                // sunlight.
+                if (sWifiApState.isTurningOn()) {
+                    mIcon = R.drawable.stat_wifi_ap_on;
+                } else {
+                    mIcon = R.drawable.stat_wifi_ap_off;
+                }
+                break;
         }
     }
 
+    @Override
+    public void toggleState() {
+        sWifiApState.toggleState(mView.getContext());
+    }
 
+    @Override
     public void onReceive(Context context, Intent intent) {
         sWifiApState.onActualStateChange(context, intent);
     }
 
-
-    public void toggleState(Context context) {
-        sWifiApState.toggleState(context);
-    }
-
-
-    public static WifiApButton getInstance() {
-        if (ownButton == null) {
-            ownButton = new WifiApButton();
-        }
-
-        return ownButton;
-    }
-
     @Override
-    void initButton(int position) {
+    protected IntentFilter getBroadcastIntentFilter() {
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(WifiManager.WIFI_AP_STATE_CHANGED_ACTION);
+        return filter;
     }
 }

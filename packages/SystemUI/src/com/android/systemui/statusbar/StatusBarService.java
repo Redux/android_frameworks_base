@@ -22,6 +22,8 @@ import com.android.internal.statusbar.IStatusBarService;
 import com.android.internal.statusbar.StatusBarIcon;
 import com.android.internal.statusbar.StatusBarIconList;
 import com.android.internal.statusbar.StatusBarNotification;
+import com.android.systemui.statusbar.powerwidget.PowerWidget;
+import com.android.systemui.R;
 
 import android.app.ActivityManagerNative;
 import android.app.Dialog;
@@ -29,7 +31,6 @@ import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.app.StatusBarManager;
-import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -37,14 +38,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
-import android.database.ContentObserver;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.location.LocationManager;
-import android.media.AudioManager;
 import android.net.Uri;
-import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -80,8 +78,6 @@ import android.widget.FrameLayout;
 import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
 
@@ -90,24 +86,6 @@ import java.lang.reflect.Field;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.drawable.StateListDrawable;
 
-import com.android.systemui.statusbar.widget.PowerButton;
-import com.android.systemui.statusbar.widget.GPSButton;
-import com.android.systemui.statusbar.widget.WifiButton;
-import com.android.systemui.statusbar.widget.BluetoothButton;
-import com.android.systemui.statusbar.widget.BrightnessButton;
-import com.android.systemui.statusbar.widget.SoundButton;
-import com.android.systemui.statusbar.widget.SyncButton;
-import com.android.systemui.statusbar.widget.WifiApButton;
-import com.android.systemui.statusbar.widget.ScreenTimeoutButton;
-import com.android.systemui.statusbar.widget.MobileDataButton;
-import com.android.systemui.statusbar.widget.NetworkModeButton;
-import com.android.systemui.statusbar.widget.LockScreenButton;
-import com.android.systemui.statusbar.widget.AutoRotateButton;
-import com.android.systemui.statusbar.widget.AirplaneButton;
-import com.android.systemui.statusbar.widget.FlashlightButton;
-import com.android.systemui.statusbar.widget.SleepButton;
-
-import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.StatusBarPolicy;
 
 
@@ -178,6 +156,9 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
     WindowManager.LayoutParams mTrackingParams;
     int mTrackingPosition; // the position of the top of the tracking view.
     private boolean mPanelSlightlyVisible;
+	
+	// the power widget
+	PowerWidget mPowerWidget;
 
     // ticker
     private Ticker mTicker;
@@ -204,9 +185,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
 
     // for disabling the status bar
     int mDisabled = 0;
-	
-	private HashMap<String,PowerButton> mUsedPowerButtons = new HashMap<String,PowerButton>();
-	private boolean mHideOnPowerButtonChange = false;
 
     private class ExpandedDialog extends Dialog {
         ExpandedDialog(Context context) {
@@ -295,9 +273,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
     private void makeStatusBarView(Context context) {
 		mContext = context;
         Resources res = context.getResources();
-		
-		SettingsObserver observer = new SettingsObserver(mHandler);
-		observer.observe();
 
         mIconSize = res.getDimensionPixelSize(com.android.internal.R.dimen.status_bar_icon_size);
 
@@ -338,6 +313,17 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         mExpandedView.setVisibility(View.GONE);
         mOngoingTitle.setVisibility(View.GONE);
         mLatestTitle.setVisibility(View.GONE);
+		
+		mPowerWidget = (PowerWidget)expanded.findViewById(R.id.exp_power_stat);
+		mPowerWidget.setupSettingsObserver(mHandler);
+		mPowerWidget.setGlobalButtonOnClickListener(new View.OnClickListener () {
+					public void onClick(View v) {
+						if(Settings.System.getInt(getContentResolver(),
+								Settings.System.EXPANDED_HIDE_ONCHANGE, 0) == 1) {
+							animateCollapse();
+						}
+					}
+				});
 
         mTicker = new MyTicker(context, sb);
 
@@ -360,12 +346,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         filter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
-		filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
-        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
-        filter.addAction(Settings.SETTINGS_CHANGED);
-        filter.addAction(AudioManager.RINGER_MODE_CHANGED_ACTION);
-        filter.addAction(WifiManager.WIFI_AP_STATE_CHANGED_ACTION);
-        filter.addAction(NetworkModeButton.NETWORK_MODE_CHANGED);
         context.registerReceiver(mBroadcastReceiver, filter);
     }
 
@@ -384,15 +364,10 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         lp.gravity = Gravity.TOP | Gravity.FILL_HORIZONTAL;
         lp.setTitle("StatusBar");
         lp.windowAnimations = com.android.internal.R.style.Animation_StatusBar;
-		
-		boolean powerWidget = Settings.System.getInt(mContext.getContentResolver(),
-													 Settings.System.EXPANDED_VIEW_WIDGET, 1) == 1;
-		setupPowerWidget();
-		if(!powerWidget) {
-			mExpandedView.findViewById(R.id.exp_power_stat).setVisibility(View.GONE);
-		}
 
         WindowManagerImpl.getDefault().addView(view, lp);
+		
+		mPowerWidget.setupWidget();
     }
 
     public void addIcon(String slot, int index, int viewIndex, StatusBarIcon icon) {
@@ -737,6 +712,8 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         }
         mExpandedVisible = true;
         visibilityChanged(true);
+
+		mPowerWidget.updateWidget();
 
         updateExpandedViewPos(EXPANDED_LEAVE_ALONE);
         mExpandedParams.flags &= ~WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
@@ -1489,127 +1466,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         }
     };
 
-
-/** Power Widget **/
-
-	private View.OnClickListener mPowerListener = new View.OnClickListener() {
-		public void onClick(View v) {
-			LinearLayout layout = (LinearLayout)v;
-			String type = (String)layout.getTag();
-			PowerButton btn = mUsedPowerButtons.get(type);
-			btn.toggleState(mContext);
-			updateWidget();
-			if (mHideOnPowerButtonChange) {
-				animateCollapse();
-			}
-		}
-	};
-
-	private void setupPowerWidget() {
-		LinearLayout layout;
-		String lists = Settings.System.getString(mContext.getContentResolver(),
-					Settings.System.WIDGET_BUTTONS);
-		Log.i("setupPowerWidget", "List: "+lists);
-		if(lists == null) {
-			lists = "toggleWifi|toggleBluetooth|toggleGPS|toggleSound";
-		}
-		List<String> list = Arrays.asList(lists.split("\\|"));
-		clearWidget();
-
-		int posi;
-		for(posi = 0; posi < list.size(); posi++) {
-			layout = (LinearLayout)mExpandedView.findViewById(PowerButton.getLayoutID(posi + 1));
-			String buttonType = list.get(posi);
-			layout.setVisibility(View.VISIBLE);
-			layout.setTag(list.get(posi));
-			layout.setOnClickListener(mPowerListener);
-			setupWidget(buttonType, posi + 1);
-		}
-		updateWidget();
-		mHideOnPowerButtonChange = (Settings.System.getInt(mContext.getContentResolver(),
-									Settings.System.EXPANDED_HIDE_ONCHANGE, 0) == 1);
-	}
-
-	private void setupWidget(String buttonType, int position) {
-		PowerButton btn = null;
-		if(PowerButton.TOGGLE_WIFI.equals(buttonType)) {
-			btn = WifiButton.getInstance();
-		} else if(PowerButton.TOGGLE_GPS.equals(buttonType)) {
-			btn = GPSButton.getInstance();
-		} else if(PowerButton.TOGGLE_BLUETOOTH.equals(buttonType)) {
-			btn = BluetoothButton.getInstance();
-		} else if(PowerButton.TOGGLE_BRIGHTNESS.equals(buttonType)) {
-			btn = BrightnessButton.getInstance();
-		} else if(PowerButton.TOGGLE_SOUND.equals(buttonType)) {
-			btn = SoundButton.getInstance();
-		} else if(PowerButton.TOGGLE_SYNC.equals(buttonType)) {
-			btn = SyncButton.getInstance();
-		} else if(PowerButton.TOGGLE_WIFIAP.equals(buttonType)) {
-			btn = WifiApButton.getInstance();
-		} else if(PowerButton.TOGGLE_SCREENTIMEOUT.equals(buttonType)) {
-			btn = ScreenTimeoutButton.getInstance();
-		} else if(PowerButton.TOGGLE_MOBILEDATA.equals(buttonType)) {
-			btn = MobileDataButton.getInstance();
-		} else if(PowerButton.TOGGLE_LOCKSCREEN.equals(buttonType)) {
-			btn = LockScreenButton.getInstance();
-		} else if(PowerButton.TOGGLE_NETWORKMODE.equals(buttonType)) {
-			btn = NetworkModeButton.getInstance();
-		} else if(PowerButton.TOGGLE_AUTOROTATE.equals(buttonType)) {
-			btn = AutoRotateButton.getInstance();
-		} else if(PowerButton.TOGGLE_AIRPLANE.equals(buttonType)) {
-			btn = AirplaneButton.getInstance();
-		} else if(PowerButton.TOGGLE_FLASHLIGHT.equals(buttonType)) {
-			btn = FlashlightButton.getInstance();
-		} else if(PowerButton.TOGGLE_SLEEPMODE.equals(buttonType)){
-			btn = SleepButton.getInstance();
-		}
-
-		if (btn != null)
-		synchronized(mUsedPowerButtons) {
-			btn.setupButton(position);
-			mUsedPowerButtons.put(buttonType, btn);
-		}
-	}
-
-	private void clearWidget() {
-		for(int posi = 0; posi < 6; posi++) {
-			LinearLayout layout = (LinearLayout)mExpandedView.findViewById(PowerButton.getLayoutID(posi + 1));
-			layout.setVisibility(View.GONE);
-			layout.setTag("");
-		}
-		synchronized (mUsedPowerButtons) {
-			Set<String> keys = mUsedPowerButtons.keySet();
-			for (String key: keys) {
-				PowerButton btn = mUsedPowerButtons.get(key);
-				btn.setupButton(0);
-			}
-		}
-	}
-
-	private void updateStates() {
-		synchronized(mUsedPowerButtons) {
-		Set<String> keys = mUsedPowerButtons.keySet();
-		for (String key: keys) {
-			PowerButton btn = mUsedPowerButtons.get(key);
-			btn.updateState(mContext);
-		}
-		}
-	}
-	private void updateViews() {
-		synchronized(mUsedPowerButtons) {
-		Set<String> keys = mUsedPowerButtons.keySet();
-		for (String key: keys) {
-			PowerButton btn = mUsedPowerButtons.get(key);
-			btn.updateView(mContext, mExpandedView);
-		}
-		}
-	}
-
-	private void updateWidget() {
-		updateStates();
-		updateViews();
-	}
-
 	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
@@ -1620,24 +1476,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
 			else if (Intent.ACTION_CONFIGURATION_CHANGED.equals(action)) {
 				updateResources();
 			}
-			else if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(action)) {
-				WifiButton btn = (WifiButton)
-					mUsedPowerButtons.get(PowerButton.TOGGLE_WIFI);
-				if (btn != null) btn.onReceive(context, intent);
-			} else if (WifiManager.WIFI_AP_STATE_CHANGED_ACTION.equals(action)) {
-				WifiApButton btn = (WifiApButton)
-					mUsedPowerButtons.get(PowerButton.TOGGLE_WIFIAP);
-				if (btn != null) btn.onReceive(context, intent);
-			} else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
-				BluetoothButton btn = (BluetoothButton)
-					mUsedPowerButtons.get(PowerButton.TOGGLE_BLUETOOTH);
-				if (btn != null) btn.onReceive(context, intent);
-			} else if (NetworkModeButton.NETWORK_MODE_CHANGED.equals(action)) {
-				NetworkModeButton btn = (NetworkModeButton)
-					mUsedPowerButtons.get(PowerButton.TOGGLE_NETWORKMODE);
-				if (btn != null) btn.onReceive(context, intent);
-			}
-			updateWidget();
 		}
 	};
 
@@ -1692,65 +1530,4 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
             vibrate();
         }
     };
-
-public class SettingsObserver extends ContentObserver {
-	public SettingsObserver(Handler handler) {
-		super(handler);
-	}
-	
-	public void observe() {
-		ContentResolver resolver = mContext.getContentResolver();
-		
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.EXPANDED_VIEW_WIDGET),
-										 false, this);
-		
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE),
-										 false, this);
-		
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS),
-										 false, this);
-		
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.AIRPLANE_MODE_ON),
-										 false, this);
-		
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.WIDGET_BUTTONS),
-										 false, this);
-		resolver.registerContentObserver(
-										 Settings.System.getUriFor(Settings.System.EXPANDED_HIDE_ONCHANGE),
-										 false, this);
-	}
-	
-	@Override
-	public void onChangeUri(Uri uri, boolean selfChange) {
-		update(uri);
-	}
-	
-	public void update(Uri uri) {
-		ContentResolver resolver = mContext.getContentResolver();
-		Resources res = mContext.getResources();
-		if(uri.equals (Settings.System.getUriFor(Settings.System.WIDGET_BUTTONS))) {
-			setupPowerWidget();
-		} else if (uri.equals(Settings.System.getUriFor(
-														Settings.System.EXPANDED_HIDE_ONCHANGE))) {
-			setupPowerWidget();
-		} else if (uri.equals(Settings.System.getUriFor(
-														Settings.System.EXPANDED_VIEW_WIDGET))) {
-			boolean powerWidget = Settings.System.getInt(mContext.getContentResolver(),
-														 Settings.System.EXPANDED_VIEW_WIDGET, 1) == 1;
-			if(!powerWidget) {
-				mExpandedView.findViewById(R.id.exp_power_stat).
-				setVisibility(View.GONE);
-			} else {
-				mExpandedView.findViewById(R.id.exp_power_stat).
-				setVisibility(View.VISIBLE);
-			}
-		}
-		updateWidget();
-	}
-}
 }
