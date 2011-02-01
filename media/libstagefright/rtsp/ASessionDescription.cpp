@@ -248,6 +248,10 @@ bool ASessionDescription::getDurationUs(int64_t *durationUs) const {
     if (value == "npt=now-") {
         return false;
     }
+	
+	if (value == "npt=0-") {
+		return false;
+	}
 
     if (strncmp(value.c_str(), "npt=", 4)) {
         return false;
