@@ -27,6 +27,7 @@ import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.ColorStateList;
 import android.media.AudioManager;
+import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -81,6 +82,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 	Settings.System.LOCKSCREEN_MUSIC_CONTROLS, 1) == 1);
 private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentResolver(),
 	Settings.System.LOCKSCREEN_ALWAYS_MUSIC_CONTROLS, 1) == 1);
+			
+	private TextView mNowPlaying;
 	
     // current configuration state of keyboard and display
     private int mKeyboardHidden;
@@ -222,6 +225,11 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
         mPauseIcon = (ImageButton) findViewById(R.id.musicControlPause); 
         mRewindIcon = (ImageButton) findViewById(R.id.musicControlPrevious); 
         mForwardIcon = (ImageButton) findViewById(R.id.musicControlNext); 
+		
+		mNowPlaying = (TextView) findViewById(R.id.musicNowPlaying);
+		// set focus to TextView to allow scrolling
+		mNowPlaying.setSelected(true);
+		mNowPlaying.setTextColor(0xffffffff);
 
         mScreenLocked = (TextView) findViewById(R.id.screenLocked);
         mSelector = (SlidingTab) findViewById(R.id.tab_selector);
@@ -328,15 +336,16 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
         mShowingBatteryInfo = updateMonitor.shouldShowBatteryInfo();
         mPluggedIn = updateMonitor.isDevicePluggedIn();
         mBatteryLevel = updateMonitor.getBatteryLevel();
-	mIsMusicActive = am.isMusicActive();
+		mIsMusicActive = am.isMusicActive();
 
         mStatus = getCurrentStatus(updateMonitor.getSimState());
         updateLayout(mStatus);
-
+		
         refreshBatteryStringAndIcon();
         refreshAlarmDisplay();
-
-	refreshMusicStatus();
+		refreshMusicStatus();
+		refreshPlayingTitle();
+		
         mTimeFormat = DateFormat.getTimeFormat(getContext());
         mDateFormatString = getContext().getString(R.string.full_wday_month_day_no_year);
         refreshTimeAndDateDisplay();
@@ -504,6 +513,16 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
             if (mForwardIcon != null)mForwardIcon.setVisibility(View.GONE);
         }
     }
+			
+			private void refreshPlayingTitle() {
+				if (am.isMusicActive()) {
+					mNowPlaying.setText(KeyguardViewMediator.NowPlaying());
+					mNowPlaying.setVisibility(View.VISIBLE);
+				} else {
+					mNowPlaying.setVisibility(View.GONE);
+					mNowPlaying.setText("");
+				}
+			}
 
     private void sendMediaButtonEvent(int code) {
         long eventtime = SystemClock.uptimeMillis();
@@ -523,6 +542,11 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
     public void onTimeChanged() {
         refreshTimeAndDateDisplay();
     }
+			
+	/** {@inheritDoc} */
+	public void onMusicChanged() {
+		refreshPlayingTitle();
+	}
 
     private void refreshTimeAndDateDisplay() {
         mDate.setText(DateFormat.format(mDateFormatString, new Date()));
