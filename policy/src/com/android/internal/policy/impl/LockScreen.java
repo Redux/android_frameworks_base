@@ -228,8 +228,10 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
 		
 		mNowPlaying = (TextView) findViewById(R.id.musicNowPlaying);
 		// set focus to TextView to allow scrolling
-		mNowPlaying.setSelected(true);
-		mNowPlaying.setTextColor(0xffffffff);
+		if (mNowPlaying != null) {
+			mNowPlaying.setSelected(true);
+			mNowPlaying.setTextColor(0xffffffff);
+		}
 
         mScreenLocked = (TextView) findViewById(R.id.screenLocked);
         mSelector = (SlidingTab) findViewById(R.id.tab_selector);
@@ -515,10 +517,10 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
     }
 			
 			private void refreshPlayingTitle() {
-				if (am.isMusicActive()) {
+				if (am.isMusicActive() && mNowPlaying != null) {
 					mNowPlaying.setText(KeyguardViewMediator.NowPlaying());
 					mNowPlaying.setVisibility(View.VISIBLE);
-				} else {
+				} else if (mNowPlaying != null) {
 					mNowPlaying.setVisibility(View.GONE);
 					mNowPlaying.setText("");
 				}
