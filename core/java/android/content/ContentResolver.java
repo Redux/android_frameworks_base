@@ -1402,7 +1402,7 @@ public abstract class ContentResolver {
 			// TODO: integrate CloseGuard support.
             try {
                 if(!mCloseFlag) {
-					Low.w(TAG, "Cursor finalized without prior close()");
+					Log.w(TAG, "Cursor finalized without prior close()");
 					close();
                 }
             } finally {
