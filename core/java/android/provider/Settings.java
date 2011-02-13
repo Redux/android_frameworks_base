@@ -1675,6 +1675,11 @@ public final class Settings {
          * @hide
          */
         public static final String NOTIFICATION_LIGHT_CHARGING = "notification_light_charging";
+		
+		/**
+		 * The LED notification color to be used.
+		 */
+		public static final String NOTIFICATION_LIGHT_COLOR = "notification_light_color";
 
         /**
          * Show pointer location on screen?

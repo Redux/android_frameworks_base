@@ -38,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.database.ContentObserver;
+import android.graphics.Color;
 import android.hardware.Usb;
 import android.media.AudioManager;
 import android.net.Uri;
@@ -97,6 +98,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     private LightsService.Light mAttentionLight;
 
     private int mDefaultNotificationColor;
+	private int mFallbackNotificationColor;
     private int mDefaultNotificationLedOn;
     private int mDefaultNotificationLedOff;
 
@@ -413,6 +415,8 @@ public class NotificationManagerService extends INotificationManager.Stub
 					Settings.System.NOTIFICATION_LIGHT_ALWAYS_ON), false, this);
 			resolver.registerContentObserver(Settings.System.getUriFor(
 					Settings.System.NOTIFICATION_LIGHT_CHARGING), false, this);
+			resolver.registerContentObserver(Settings.System.getUriFor(
+					Settings.System.NOTIFICATION_LIGHT_COLOR), false, this);
             update();
         }
 
@@ -428,6 +432,9 @@ public class NotificationManagerService extends INotificationManager.Stub
 						Settings.System.NOTIFICATION_LIGHT_ALWAYS_ON, 1) != 0;
 			boolean charging = Settings.System.getInt(resolver,
 						Settings.System.NOTIFICATION_LIGHT_CHARGING, 1) != 0;
+			mDefaultNotificationColor = Settings.System.getInt(resolver,
+						Settings.System.NOTIFICATION_LIGHT_COLOR,
+						mFallbackNotificationColor);
             if (mNotificationPulseEnabled != pulseEnabled ||
 						mNotificationAlwaysOn != alwaysOn ||
 						mNotificationCharging != charging) {
@@ -459,7 +466,7 @@ public class NotificationManagerService extends INotificationManager.Stub
         mAttentionLight = lights.getLight(LightsService.LIGHT_ID_ATTENTION);
 
         Resources resources = mContext.getResources();
-        mDefaultNotificationColor = resources.getColor(
+        mFallbackNotificationColor = resources.getColor(
                 com.android.internal.R.color.config_defaultNotificationColor);
         mDefaultNotificationLedOn = resources.getInteger(
                 com.android.internal.R.integer.config_defaultNotificationLedOn);
