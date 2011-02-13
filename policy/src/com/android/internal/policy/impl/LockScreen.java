@@ -28,6 +28,7 @@ import android.content.res.Resources;
 import android.content.res.ColorStateList;
 import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.format.DateFormat;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -108,6 +109,8 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
     private String mDateFormatString;
     private java.text.DateFormat mTimeFormat;
     private boolean mEnableMenuKeyInLockScreen;
+			
+	private Handler handler = new Handler();
 
     /**
      * The status of this lock screen.
@@ -548,6 +551,11 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
 	/** {@inheritDoc} */
 	public void onMusicChanged() {
 		refreshPlayingTitle();
+		handler.postDelayed(new Runnable () {
+			public void run() {
+				refreshMusicStatus();
+			}
+		}, 100);
 	}
 
     private void refreshTimeAndDateDisplay() {
