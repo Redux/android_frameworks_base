@@ -53,13 +53,16 @@ public class MediaPlayPauseButton extends MediaKeyEventButton {
     private boolean isMusicActive() {
         if(mCurrentState == MEDIA_STATE_UNKNOWN) {
             mCurrentState = MEDIA_STATE_INACTIVE;
-            AudioManager am = getAudioManager(mView.getContext());
-            if(am != null) {
-                mCurrentState = (am.isMusicActive() ? MEDIA_STATE_ACTIVE : MEDIA_STATE_INACTIVE);
-            }
-			
-			if (shouldBePlaying)
-				return true;
+			try {
+				AudioManager am = getAudioManager(mView.getContext());
+				if(am != null) {
+					mCurrentState = (am.isMusicActive() ? MEDIA_STATE_ACTIVE : MEDIA_STATE_INACTIVE);
+				}
+				if (shouldBePlaying)
+					return true;
+			} catch (Exception e) {
+				Log.e(TAG, "isMusicActive() failed!", e);
+			}
 
             return (mCurrentState == MEDIA_STATE_ACTIVE);
         } else {
