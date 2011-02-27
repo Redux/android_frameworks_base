@@ -59,9 +59,9 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
     private Status mStatus = Status.Normal;
 
-    private final LockPatternUtils mLockPatternUtils;
-    private final KeyguardUpdateMonitor mUpdateMonitor;
-    private final KeyguardScreenCallback mCallback;
+    private LockPatternUtils mLockPatternUtils;
+    private KeyguardUpdateMonitor mUpdateMonitor;
+    private KeyguardScreenCallback mCallback;
 
     private TextView mCarrier;
     private SlidingTab mSelector;
@@ -79,10 +79,10 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     private AudioManager am = (AudioManager)getContext().getSystemService(Context.AUDIO_SERVICE);
     private boolean mWasMusicActive = am.isMusicActive();
     private boolean mIsMusicActive = false;
-     private boolean mLockMusicControls = (Settings.System.getInt(mContext.getContentResolver(),
-	Settings.System.LOCKSCREEN_MUSIC_CONTROLS, 1) == 1);
-private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentResolver(),
-	Settings.System.LOCKSCREEN_ALWAYS_MUSIC_CONTROLS, 1) == 1);
+	private boolean mLockMusicControls = (Settings.System.getInt(mContext.getContentResolver(),
+												Settings.System.LOCKSCREEN_MUSIC_CONTROLS, 1) == 1);
+	private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentResolver(),
+												Settings.System.LOCKSCREEN_ALWAYS_MUSIC_CONTROLS, 1) == 1);
 			
 	private TextView mNowPlaying;
 	
@@ -298,8 +298,8 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
         setFocusableInTouchMode(true);
         setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
 
-        updateMonitor.registerInfoCallback(this);
-        updateMonitor.registerSimStateCallback(this);
+        mUpdateMonitor.registerInfoCallback(this);
+        mUpdateMonitor.registerSimStateCallback(this);
 
         mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         mSilentMode = isSilentMode();
@@ -794,8 +794,11 @@ private boolean mLockAlwaysMusic = (Settings.System.getInt(mContext.getContentRe
 
     /** {@inheritDoc} */
     public void cleanUp() {
-        mUpdateMonitor.removeCallback(this);
-    }
+        mUpdateMonitor.removeCallback(this); // this must be first
+		mLockPatternUtils = null;
+		mUpdateMonitor = null;
+		mCallback = null;
+	}
 
     /** {@inheritDoc} */
     public void onRingerModeChanged(int state) {

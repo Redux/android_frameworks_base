@@ -385,17 +385,13 @@ bool SurfaceFlinger::threadLoop()
         logger.log(GraphicLog::SF_COMPOSITION_COMPLETE, index);
         hw.compositionComplete();
 
-        // release the clients before we flip ('cause flip might block)
-        logger.log(GraphicLog::SF_UNLOCK_CLIENTS, index);
-        unlockClients();
-
         logger.log(GraphicLog::SF_SWAP_BUFFERS, index);
         postFramebuffer();
 
         logger.log(GraphicLog::SF_REPAINT_DONE, index);
     } else {
         // pretend we did the post
-        unlockClients();
+		hw.compositionComplete();
         usleep(16667); // 60 fps period
     }
     return true;
@@ -825,17 +821,6 @@ void SurfaceFlinger::composeSurfaces(const Region& dirty)
         if (!clip.isEmpty()) {
             layer->draw(clip);
         }
-    }
-}
-
-void SurfaceFlinger::unlockClients()
-{
-    const LayerVector& drawingLayers(mDrawingState.layersSortedByZ);
-    const size_t count = drawingLayers.size();
-    sp<LayerBase> const* const layers = drawingLayers.array();
-    for (size_t i=0 ; i<count ; ++i) {
-        const sp<LayerBase>& layer = layers[i];
-        layer->finishPageFlip();
     }
 }
 
@@ -2047,6 +2032,7 @@ status_t SurfaceFlinger::captureScreenImplLocked(DisplayID dpy,
 
         // invert everything, b/c glReadPixel() below will invert the FB
         glViewport(0, 0, sw, sh);
+		glScissor(0, 0, sw, sh);
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -2106,6 +2092,9 @@ status_t SurfaceFlinger::captureScreenImplLocked(DisplayID dpy,
     glBindFramebufferOES(GL_FRAMEBUFFER_OES, 0);
     glDeleteRenderbuffersOES(1, &tname);
     glDeleteFramebuffersOES(1, &name);
+	
+	hw.compositionComplete();
+	
     return result;
 }
 

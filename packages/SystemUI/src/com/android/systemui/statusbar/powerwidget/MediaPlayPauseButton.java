@@ -61,7 +61,7 @@ public class MediaPlayPauseButton extends MediaKeyEventButton {
 				if (shouldBePlaying)
 					return true;
 			} catch (Exception e) {
-				Log.e(TAG, "isMusicActive() failed!", e);
+				// do nothing
 			}
 
             return (mCurrentState == MEDIA_STATE_ACTIVE);

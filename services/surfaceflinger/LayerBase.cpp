@@ -277,10 +277,6 @@ void LayerBase::unlockPageFlip(
     }
 }
 
-void LayerBase::finishPageFlip()
-{
-}
-
 void LayerBase::invalidate()
 {
     if ((android_atomic_or(1, &mInvalidate)&1) == 0) {

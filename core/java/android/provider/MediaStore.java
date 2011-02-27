@@ -898,6 +898,13 @@ public final class MediaStore {
              * @hide
              */
             public static final String ALBUM_ARTIST = "album_artist";
+			
+			/**
+			 * Whether the song is part of a compilation
+			 * <P>Type: TEXT</P>
+			 * @hide
+			 */
+			public static final String COMPILATION = "compilation";
 
             /**
              * A non human readable key calculated from the ARTIST, used for
