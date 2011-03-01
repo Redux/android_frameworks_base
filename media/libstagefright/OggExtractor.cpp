@@ -663,7 +663,6 @@ void MyVorbisExtractor::parseFileMetaData() {
         { "ALBUM", kKeyAlbum },
 		{ "ALBUMARTIST", kKeyAlbumArtist },
 		{ "ALBUM ARIST", kKeyAlbumArtist },
-		{ "COMPILATION", kKeyCompilation },
         { "COMPOSER", kKeyComposer },
         { "GENRE", kKeyGenre },
         { "AUTHOR", kKeyAuthor },

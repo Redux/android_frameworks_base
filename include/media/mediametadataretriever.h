@@ -56,7 +56,6 @@ enum {
     METADATA_KEY_MIMETYPE        = 22,
     METADATA_KEY_DISC_NUMBER     = 23,
     METADATA_KEY_ALBUMARTIST     = 24,
-	METADATA_KEY_COMPILATION	 = 25,
     // Add more here...
 };
 
