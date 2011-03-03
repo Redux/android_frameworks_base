@@ -1331,6 +1331,16 @@ public abstract class Context {
      * @see android.app.NotificationManager
      */
     public static final String NOTIFICATION_SERVICE = "notification";
+	
+	/**
+	 * Use with {@link #getSystemService} to retrieve a
+	 * {@link #android.app.ProfileManager} for setting
+	 * notification profiles.
+	 *
+	 * @see #getSystemService
+	 * @see android.app.ProfileManager
+	 */
+	public static final String PROFILE_SERVICE = "profile";
 
     /**
      * Use with {@link #getSystemService} to retrieve a

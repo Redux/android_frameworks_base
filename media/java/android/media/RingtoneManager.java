@@ -21,6 +21,8 @@ import com.android.internal.database.SortCursor;
 import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
 import android.app.Activity;
+import android.app.ProfileGroup;
+import android.app.ProfileManager;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
@@ -593,12 +595,24 @@ public class RingtoneManager {
      * @see #getRingtone(Context, Uri)
      */
     private static Ringtone getRingtone(final Context context, Uri ringtoneUri, int streamType) {
+		ProfileManager pm = (ProfileManager)context.getSystemService(Context.PROFILE_SERVICE);
+		ProfileGroup pg = pm.getActiveProfileGroup(context.getPackageName());
 
         try {
             Ringtone r = new Ringtone(context);
             if (streamType >= 0) {
                 r.setStreamType(streamType);
             }
+			if (pg != null) {
+				switch (pg.getRingerMode()) {
+					case OVERRIDE:
+						r.open(pg.getRingerOverride());
+						return r;
+					case SUPPRESS:
+						r = null;
+						return r;
+				}
+			}
             r.open(ringtoneUri);
             return r;
         } catch (Exception ex) {

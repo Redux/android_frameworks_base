@@ -63,6 +63,9 @@
     <!-- Displayed when the user dialed an MMI code whose function
          could not be performed because FDN is enabled. This will be displayed in a toast. -->
     <string name="mmiFdnError">Operation is restricted to fixed dialing numbers only.</string>
+    
+    <!-- Name of wildcard profile. -->
+    <string name="wildcardProfile">Other</string>
 
     <!-- Displayed when a phone feature such as call barring was activated. -->
     <string name="serviceEnabled">Service was enabled.</string>
@@ -300,6 +303,9 @@
     <!-- label for item that turns off power in phone options dialog -->
     <string name="global_action_power_off">Power off</string>
     <string name="global_action_reboot">Reboot</string>
+    
+    <!-- label for item that changes the notification profile in phone options dialog -->
+    <string name="global_action_choose_profile">Choose profile</string>
 
     <!-- label for item that enables silent mode in phone options dialog -->
     <string name="global_action_toggle_silent_mode">Silent mode</string>
