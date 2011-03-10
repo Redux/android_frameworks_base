@@ -345,6 +345,7 @@ private:
     int mNumBuffers;
     BufferList mBufferList;
 
+
     struct RetireUpdate : public UpdateBase {
         const int numBuffers;
         inline RetireUpdate(SharedBufferBase* sbb, int numBuffers);

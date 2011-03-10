@@ -40,19 +40,12 @@
 #include <utils/KeyedVector.h>
 #include <utils/String8.h>
 
+#include <ui/egl/android_natives.h>
+
 #include "hooks.h"
 #include "egl_impl.h"
 #include "Loader.h"
 
-// Enable this define to allow querying vendor-specific GL extensions. This
-// currently will only work correctly for implementations which have a single
-// EGL backend; multiple EGL backends are not supported.
-// There's also an extra subtlety with the EGLimage entry points in GL, which
-// can't work properly if they're called directly (they have to go through
-// a wrapper).
-#define ENABLE_VENDOR_EXTENSIONS
-
-#define MAKE_CONFIG(_impl, _index)  ((EGLConfig)(((_impl)<<24) | (_index)))
 #define setError(_e, _r) setErrorEtc(__FUNCTION__, __LINE__, _e, _r)
 
 // ----------------------------------------------------------------------------
@@ -68,11 +61,6 @@ static char const * const gExtensionString  =
         "EGL_KHR_image "
         "EGL_KHR_image_base "
         "EGL_KHR_image_pixmap "
-#ifdef ENABLE_VENDOR_EXTENSIONS
-        "EGL_KHR_gl_texture_2D_image "
-        "EGL_KHR_gl_texture_cubemap_image "
-        "EGL_KHR_gl_renderbuffer_image "
-#endif
         "EGL_ANDROID_image_native_buffer "
         "EGL_ANDROID_swap_rectangle "
         ;
@@ -210,15 +198,16 @@ struct egl_surface_t : public egl_object_t
 {
     typedef egl_object_t::LocalRef<egl_surface_t, EGLSurface> Ref;
 
-    egl_surface_t(EGLDisplay dpy, EGLSurface surface, EGLConfig config,
-            int impl, egl_connection_t const* cnx) 
-    : dpy(dpy), surface(surface), config(config), impl(impl), cnx(cnx) {
+    egl_surface_t(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win,
+            EGLSurface surface, int impl, egl_connection_t const* cnx)
+    : dpy(dpy), surface(surface), config(config), win(win), impl(impl), cnx(cnx) {
     }
     ~egl_surface_t() {
     }
     EGLDisplay                  dpy;
     EGLSurface                  surface;
     EGLConfig                   config;
+    sp<ANativeWindow>           win;
     int                         impl;
     egl_connection_t const*     cnx;
 };
@@ -229,8 +218,8 @@ struct egl_context_t : public egl_object_t
     
     egl_context_t(EGLDisplay dpy, EGLContext context, EGLConfig config,
             int impl, egl_connection_t const* cnx, int version) 
-    : dpy(dpy), context(context), read(0), draw(0), impl(impl), cnx(cnx),
-      version(version)
+    : dpy(dpy), context(context), config(config), read(0), draw(0), impl(impl),
+      cnx(cnx), version(version)
     {
     }
     EGLDisplay                  dpy;
@@ -839,7 +828,6 @@ EGLBoolean eglGetConfigs(   EGLDisplay dpy,
 {
     egl_display_t const * const dp = get_display(dpy);
     if (!dp) return setError(EGL_BAD_DISPLAY, EGL_FALSE);
-    if (!num_config) return setError(EGL_BAD_PARAMETER, EGL_FALSE);
 
     GLint numConfigs = dp->numTotalConfigs;
     if (!configs) {
@@ -999,11 +987,22 @@ EGLSurface eglCreateWindowSurface(  EGLDisplay dpy, EGLConfig config,
     egl_display_t const* dp = 0;
     egl_connection_t* cnx = validate_display_config(dpy, config, dp);
     if (cnx) {
+        EGLDisplay iDpy = dp->disp[ dp->configs[intptr_t(config)].impl ].dpy;
+        EGLConfig iConfig = dp->configs[intptr_t(config)].config;
+        EGLint format;
+
+        // set the native window's buffers format to match this config
+        if (cnx->egl.eglGetConfigAttrib(iDpy,
+                iConfig, EGL_NATIVE_VISUAL_ID, &format)) {
+            if (format != 0) {
+                native_window_set_buffers_geometry(window, 0, 0, format);
+            }
+        }
+
         EGLSurface surface = cnx->egl.eglCreateWindowSurface(
-                dp->disp[ dp->configs[intptr_t(config)].impl ].dpy,
-                dp->configs[intptr_t(config)].config, window, attrib_list);
+                iDpy, iConfig, window, attrib_list);
         if (surface != EGL_NO_SURFACE) {
-            egl_surface_t* s = new egl_surface_t(dpy, surface, config,
+            egl_surface_t* s = new egl_surface_t(dpy, config, window, surface,
                     dp->configs[intptr_t(config)].impl, cnx);
             return s;
         }
@@ -1022,7 +1021,7 @@ EGLSurface eglCreatePixmapSurface(  EGLDisplay dpy, EGLConfig config,
                 dp->disp[ dp->configs[intptr_t(config)].impl ].dpy,
                 dp->configs[intptr_t(config)].config, pixmap, attrib_list);
         if (surface != EGL_NO_SURFACE) {
-            egl_surface_t* s = new egl_surface_t(dpy, surface, config,
+            egl_surface_t* s = new egl_surface_t(dpy, config, NULL, surface,
                     dp->configs[intptr_t(config)].impl, cnx);
             return s;
         }
@@ -1040,7 +1039,7 @@ EGLSurface eglCreatePbufferSurface( EGLDisplay dpy, EGLConfig config,
                 dp->disp[ dp->configs[intptr_t(config)].impl ].dpy,
                 dp->configs[intptr_t(config)].config, attrib_list);
         if (surface != EGL_NO_SURFACE) {
-            egl_surface_t* s = new egl_surface_t(dpy, surface, config,
+            egl_surface_t* s = new egl_surface_t(dpy, config, NULL, surface,
                     dp->configs[intptr_t(config)].impl, cnx);
             return s;
         }
@@ -1061,6 +1060,9 @@ EGLBoolean eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
     EGLBoolean result = s->cnx->egl.eglDestroySurface(
             dp->disp[s->impl].dpy, s->surface);
     if (result == EGL_TRUE) {
+        if (s->win != NULL) {
+            native_window_set_buffers_geometry(s->win.get(), 0, 0, 0);
+        }
         _s.terminate();
     }
     return result;
@@ -1380,31 +1382,6 @@ EGLint eglGetError(void)
     return result;
 }
 
-#ifdef ENABLE_VENDOR_EXTENSIONS
-// Note: Similar implementations of this function also exist in gl2.cpp and
-// gl.cpp, and are used by applications that call the exported entry points
-// directly.
-typedef void (GL_APIENTRYP PFNGLEGLIMAGETARGETTEXTURE2DOESPROC) (GLenum target, GLeglImageOES image);
-typedef void (GL_APIENTRYP PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC) (GLenum target, GLeglImageOES image);
-
-static PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES_impl = NULL;
-static PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC glEGLImageTargetRenderbufferStorageOES_impl = NULL;
-
-static void glEGLImageTargetTexture2DOES_wrapper(GLenum target, GLeglImageOES image)
-{
-    GLeglImageOES implImage =
-        (GLeglImageOES)egl_get_image_for_current_context((EGLImageKHR)image);
-    glEGLImageTargetTexture2DOES_impl(target, implImage);
-}
-
-static void glEGLImageTargetRenderbufferStorageOES_wrapper(GLenum target, GLeglImageOES image)
-{
-    GLeglImageOES implImage =
-        (GLeglImageOES)egl_get_image_for_current_context((EGLImageKHR)image);
-    glEGLImageTargetRenderbufferStorageOES_impl(target, implImage);
-}
-#endif
-
 __eglMustCastToProperFunctionPointerType eglGetProcAddress(const char *procname)
 {
     // eglGetProcAddress() could be the very first function called
@@ -1419,29 +1396,6 @@ __eglMustCastToProperFunctionPointerType eglGetProcAddress(const char *procname)
     __eglMustCastToProperFunctionPointerType addr;
     addr = findProcAddress(procname, gExtentionMap, NELEM(gExtentionMap));
     if (addr) return addr;
-
-#ifdef ENABLE_VENDOR_EXTENSIONS
-    addr = 0;
-    for (int i=0 ; i<IMPL_NUM_IMPLEMENTATIONS ; i++) {
-        egl_connection_t* const cnx = &gEGLImpl[i];
-        if (cnx->dso) {
-            if (cnx->egl.eglGetProcAddress) {
-                addr = cnx->egl.eglGetProcAddress(procname);
-                if (addr) {
-                    if (!strcmp(procname, "glEGLImageTargetTexture2DOES")) {
-                        glEGLImageTargetTexture2DOES_impl = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)addr;
-                        return (__eglMustCastToProperFunctionPointerType)glEGLImageTargetTexture2DOES_wrapper;
-                    }
-                    if (!strcmp(procname, "glEGLImageTargetRenderbufferStorageOES")) {
-                        glEGLImageTargetRenderbufferStorageOES_impl = (PFNGLEGLIMAGETARGETRENDERBUFFERSTORAGEOESPROC)addr;
-                        return (__eglMustCastToProperFunctionPointerType)glEGLImageTargetRenderbufferStorageOES_wrapper;
-                    }
-                    return addr;
-                }
-            }
-        }
-    }
-#endif
 
     // this protects accesses to gGLExtentionMap and gGLExtentionSlot
     pthread_mutex_lock(&gInitDriverMutex);

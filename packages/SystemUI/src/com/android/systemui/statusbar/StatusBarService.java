@@ -32,7 +32,6 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.app.StatusBarManager;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -41,9 +40,7 @@ import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.Binder;
@@ -81,11 +78,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
-import java.lang.reflect.Field;
-
-import android.graphics.PorterDuff.Mode;
-import android.graphics.drawable.StateListDrawable;
-
+import com.android.systemui.R;
 import com.android.systemui.statusbar.policy.StatusBarPolicy;
 
 
@@ -115,8 +108,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
     int mPixelFormat;
     H mHandler = new H();
     Object mQueueLock = new Object();
-	
-	private Context mContext;
 
     // icons
     LinearLayout mIcons;
@@ -271,7 +262,6 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
     // Constructing the view
     // ================================================================================
     private void makeStatusBarView(Context context) {
-		mContext = context;
         Resources res = context.getResources();
 
         mIconSize = res.getDimensionPixelSize(com.android.internal.R.dimen.status_bar_icon_size);
@@ -316,9 +306,9 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
 		
 		mPowerWidget = (PowerWidget)expanded.findViewById(R.id.exp_power_stat);
 		mPowerWidget.setupSettingsObserver(mHandler);
-		mPowerWidget.setGlobalButtonOnClickListener(new View.OnClickListener () {
+		mPowerWidget.setGlobalButtonOnClickListener(new View.OnClickListener() {
 					public void onClick(View v) {
-						if(Settings.System.getInt(getContentResolver(),
+						if (Settings.System.getInt(getContentResolver(),
 								Settings.System.EXPANDED_HIDE_ONCHANGE, 0) == 1) {
 							animateCollapse();
 						}
@@ -368,6 +358,12 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         WindowManagerImpl.getDefault().addView(view, lp);
 		
 		mPowerWidget.setupWidget();
+		boolean powerWidget = Settings.System.getInt(getContentResolver(),
+				Settings.System.EXPANDED_VIEW_WIDGET, 1) == 1;
+		
+		if (!powerWidget) {
+			mExpandedView.findViewById(R.id.exp_power_stat).setVisibility(View.GONE);
+		}
     }
 
     public void addIcon(String slot, int index, int viewIndex, StatusBarIcon icon) {
@@ -1466,19 +1462,18 @@ public class StatusBarService extends Service implements CommandQueue.Callbacks 
         }
     };
 
-	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
-			if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(action)
-						|| Intent.ACTION_SCREEN_OFF.equals(action)) {
-				animateCollapse();
-			}
-			else if (Intent.ACTION_CONFIGURATION_CHANGED.equals(action)) {
-				updateResources();
-			}
-		}
-	};
-
+    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (Intent.ACTION_CLOSE_SYSTEM_DIALOGS.equals(action)
+                    || Intent.ACTION_SCREEN_OFF.equals(action)) {
+                animateCollapse();
+            }
+            else if (Intent.ACTION_CONFIGURATION_CHANGED.equals(action)) {
+                updateResources();
+            }
+        }
+    };
 
     /**
      * Reload some of our resources when the configuration changes.

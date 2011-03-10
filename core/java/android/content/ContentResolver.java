@@ -1399,11 +1399,9 @@ public abstract class ContentResolver {
 
         @Override
         protected void finalize() throws Throwable {
-			// TODO: integrate CloseGuard support.
             try {
                 if(!mCloseFlag) {
-					Log.w(TAG, "Cursor finalized without prior close()");
-					close();
+                    ContentResolver.this.releaseProvider(mContentProvider);
                 }
             } finally {
                 super.finalize();

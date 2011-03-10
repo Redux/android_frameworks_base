@@ -141,11 +141,11 @@ status_t AudioHardwareGeneric::setVoiceVolume(float v)
     // Implement: set voice volume
     return NO_ERROR;
 }
-
+	
 status_t AudioHardwareGeneric::setFmVolume(float v)
 {
-    // Implement: set fm volume
-    return NO_ERROR;
+	// Implement: set fm volume
+	return NO_ERROR;
 }
 
 status_t AudioHardwareGeneric::setMasterVolume(float v)

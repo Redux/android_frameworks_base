@@ -22,9 +22,6 @@
 
 #include <media/stagefright/MediaErrors.h>
 #include <utils/RefBase.h>
-#ifdef USE_GETBUFFERINFO
-#include <binder/IMemory.h>
-#endif
 
 namespace android {
 
@@ -114,10 +111,6 @@ struct MediaSource : public RefBase {
     virtual status_t pause() {
         return ERROR_UNSUPPORTED;
     }
-
-#ifdef USE_GETBUFFERINFO
-    virtual status_t getBufferInfo(sp<IMemory>& Frame, size_t *alignedSize);
-#endif
 
 protected:
     virtual ~MediaSource();

@@ -160,9 +160,9 @@ public class AccountUnlockScreen extends RelativeLayout implements KeyguardScree
             mCheckingDialog.hide();
         }
         mUpdateMonitor.removeCallback(this); // this must be first
-		mCallback = null;
-		mLockPatternUtils = null;
-		mUpdateMonitor = null;
+        mCallback = null;
+        mLockPatternUtils = null;
+        mUpdateMonitor = null;
     }
 
     /** {@inheritDoc} */

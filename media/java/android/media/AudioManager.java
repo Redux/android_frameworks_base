@@ -970,6 +970,8 @@ public class AudioManager {
      * In call audio mode. A call is established.
      */
     public static final int MODE_IN_CALL            = AudioSystem.MODE_IN_CALL;
+	
+	public static final int MODE_IN_COMMUNICATION	= AudioSystem.MODE_IN_COMMUNICATION;
 
     /* Routing bits for setRouting/getRouting API */
     /**

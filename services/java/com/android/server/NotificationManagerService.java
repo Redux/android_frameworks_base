@@ -98,7 +98,7 @@ public class NotificationManagerService extends INotificationManager.Stub
     private LightsService.Light mAttentionLight;
 
     private int mDefaultNotificationColor;
-	private int mFallbackNotificationColor;
+    private int mFallbackNotificationColor;
     private int mDefaultNotificationLedOn;
     private int mDefaultNotificationLedOff;
 
@@ -137,11 +137,11 @@ public class NotificationManagerService extends INotificationManager.Stub
     private boolean mBatteryFull;
     private NotificationRecord mLedNotification;
 
-    private static int mBatteryLowARGB;
-    private static int mBatteryMediumARGB;
-    private static int mBatteryFullARGB;
-    private static int mBatteryLedOn;
-    private static int mBatteryLedOff;
+    private static final int BATTERY_LOW_ARGB = 0xFFFF0000; // Charging Low - red solid on
+    private static final int BATTERY_MEDIUM_ARGB = 0xFFFFFF00;    // Charging - orange solid on
+    private static final int BATTERY_FULL_ARGB = 0xFF00FF00; // Charging Full - green solid on
+    private static final int BATTERY_BLINK_ON = 125;
+    private static final int BATTERY_BLINK_OFF = 2875;
 
     private static String idDebugString(Context baseContext, String packageName, int id) {
         Context c = null;
@@ -426,18 +426,18 @@ public class NotificationManagerService extends INotificationManager.Stub
 
         public void update() {
             ContentResolver resolver = mContext.getContentResolver();
+			mDefaultNotificationColor = Settings.System.getInt(resolver,
+						Settings.System.NOTIFICATION_LIGHT_COLOR,
+						mFallbackNotificationColor);
             boolean pulseEnabled = Settings.System.getInt(resolver,
                         Settings.System.NOTIFICATION_LIGHT_PULSE, 0) != 0;
 			boolean alwaysOn = Settings.System.getInt(resolver,
 						Settings.System.NOTIFICATION_LIGHT_ALWAYS_ON, 1) != 0;
 			boolean charging = Settings.System.getInt(resolver,
 						Settings.System.NOTIFICATION_LIGHT_CHARGING, 1) != 0;
-			mDefaultNotificationColor = Settings.System.getInt(resolver,
-						Settings.System.NOTIFICATION_LIGHT_COLOR,
-						mFallbackNotificationColor);
-            if (mNotificationPulseEnabled != pulseEnabled ||
-						mNotificationAlwaysOn != alwaysOn ||
-						mNotificationCharging != charging) {
+            if (mNotificationPulseEnabled != pulseEnabled
+					|| mNotificationAlwaysOn != alwaysOn
+					|| mNotificationCharging != charging) {
                 mNotificationPulseEnabled = pulseEnabled;
 				mNotificationAlwaysOn = alwaysOn;
 				mNotificationCharging = charging;
@@ -472,17 +472,6 @@ public class NotificationManagerService extends INotificationManager.Stub
                 com.android.internal.R.integer.config_defaultNotificationLedOn);
         mDefaultNotificationLedOff = resources.getInteger(
                 com.android.internal.R.integer.config_defaultNotificationLedOff);
-
-        mBatteryLowARGB = mContext.getResources().getInteger(
-                com.android.internal.R.integer.config_notificationsBatteryLowARGB);
-        mBatteryMediumARGB = mContext.getResources().getInteger(
-                com.android.internal.R.integer.config_notificationsBatteryMediumARGB);
-        mBatteryFullARGB = mContext.getResources().getInteger(
-                com.android.internal.R.integer.config_notificationsBatteryFullARGB);
-        mBatteryLedOn = mContext.getResources().getInteger(
-                com.android.internal.R.integer.config_notificationsBatteryLedOn);
-        mBatteryLedOff = mContext.getResources().getInteger(
-                com.android.internal.R.integer.config_notificationsBatteryLedOff);
 
         // Don't start allowing notifications until the setup wizard has run once.
         // After that, including subsequent boots, init with notifications turned on.
@@ -1097,25 +1086,21 @@ public class NotificationManagerService extends INotificationManager.Stub
     private void updateLightsLocked()
     {
         // Battery low always shows, other states only show if charging.
-		if (mNotificationCharging ) {
-			if (mBatteryLow) {
-				if (mBatteryCharging) {
-					mBatteryLight.setColor(mBatteryLowARGB);
-				} else {
-					// Flash when battery is low and not charging
-					mBatteryLight.setFlashing(mBatteryLowARGB, LightsService.LIGHT_FLASH_TIMED,
-							mBatteryLedOn, mBatteryLedOff);
-				}
-			} else if (mBatteryCharging) {
-				if (mBatteryFull) {
-					mBatteryLight.setColor(mBatteryFullARGB);
-				} else {
-					mBatteryLight.setColor(mBatteryMediumARGB);
-				}
-			} else {
-				mBatteryLight.turnOff();
-			}
-		} else {
+        if (mBatteryLow) {
+            if (mBatteryCharging) {
+                mBatteryLight.setColor(BATTERY_LOW_ARGB);
+            } else {
+                // Flash when battery is low and not charging
+                mBatteryLight.setFlashing(BATTERY_LOW_ARGB, LightsService.LIGHT_FLASH_TIMED,
+                        BATTERY_BLINK_ON, BATTERY_BLINK_OFF);
+            }
+        } else if (mBatteryCharging && mNotificationCharging) {
+            if (mBatteryFull) {
+                mBatteryLight.setColor(BATTERY_FULL_ARGB);
+            } else {
+                mBatteryLight.setColor(BATTERY_MEDIUM_ARGB);
+            }
+        } else {
             mBatteryLight.turnOff();
         }
 
@@ -1188,11 +1173,11 @@ public class NotificationManagerService extends INotificationManager.Stub
     // to accidentally lose.
     private void updateAdbNotification(boolean adbEnabled) {
         if (adbEnabled) {
-			if ("0".equals(SystemProperties.get("persist.adb.notify")) ||
-					Settings.Secure.getInt(mContext.getContentResolver(),
-					Settings.Secure.ADB_NOTIFY, 1) == 0) {
-				return;
-			}
+            if ("0".equals(SystemProperties.get("persist.adb.notify")) ||
+				Settings.Secure.getInt(mContext.getContentResolver(),
+				Settings.Secure.ADB_NOTIFY, 1) == 0) {
+                return;
+            }
             if (!mAdbNotificationShown) {
                 NotificationManager notificationManager = (NotificationManager) mContext
                         .getSystemService(Context.NOTIFICATION_SERVICE);

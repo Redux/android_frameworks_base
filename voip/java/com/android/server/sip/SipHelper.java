@@ -145,22 +145,15 @@ class SipHelper {
         return viaHeaders;
     }
 
-    public Address createContactAddress(SipProfile profile)
-	throws ParseException, SipException {
+    private ContactHeader createContactHeader(SipProfile profile)
+            throws ParseException, SipException {
         ListeningPoint lp = getListeningPoint();
-		
         SipURI contactURI =
-		createSipUri(profile.getUserName(), profile.getProtocol(), lp);
-		
+                createSipUri(profile.getUserName(), profile.getProtocol(), lp);
+
         Address contactAddress = mAddressFactory.createAddress(contactURI);
         contactAddress.setDisplayName(profile.getDisplayName());
-		
-        return contactAddress;
-    }
-	
-    private ContactHeader createContactHeader(SipProfile profile)
-	throws ParseException, SipException {
-        Address contactAddress = createContactAddress(profile);
+
         return mHeaderFactory.createContactHeader(contactAddress);
     }
 
@@ -222,8 +215,9 @@ class SipHelper {
             String tag) throws ParseException, SipException {
         FromHeader fromHeader = createFromHeader(userProfile, tag);
         ToHeader toHeader = createToHeader(userProfile);
-        SipURI requestURI = mAddressFactory.createSipURI("sip:"
-                + userProfile.getSipDomain());
+        SipURI requestURI = mAddressFactory.createSipURI(
+                userProfile.getUriString().replaceFirst(
+                userProfile.getUserName() + "@", ""));
         List<ViaHeader> viaHeaders = createViaHeaders();
         CallIdHeader callIdHeader = createCallIdHeader();
         CSeqHeader cSeqHeader = createCSeqHeader(requestType);

@@ -276,20 +276,15 @@
     <string name="screen_lock">Screen lock</string>
     <!-- Button to turn off the phone, within the Phone Options dialog -->
     <string name="power_off">Power off</string>
-    
     <string name="reboot_system">Reboot</string>
 
     <!-- Shutdown Progress Dialog. This is shown if the user chooses to power off the phone. -->
     <string name="shutdown_progress">Shutting down\u2026</string>
-    
-    <!-- Reboot Progress Dialog. -->
     <string name="reboot_progress">Rebooting\u2026</string>
 
     <!-- Shutdown Confirmation Dialog.  When the user chooses to power off the phone, there will be a confirmation dialog.  This is the message. -->
     <string name="shutdown_confirm">Your phone will shut down.</string>
-    
-    <!-- Reboot Confirmation Dialog. -->
-    <string name="reboot_confirm">Y~our phone will reboot.</string>
+    <string name="reboot_confirm">Your phone will reboot.</string>
 
     <!-- Recent Tasks dialog: title -->
     <string name="recent_tasks_title">Recent</string>
@@ -304,8 +299,6 @@
 
     <!-- label for item that turns off power in phone options dialog -->
     <string name="global_action_power_off">Power off</string>
-    
-    <!-- label for item that reboots the phone in phone options dialog -->
     <string name="global_action_reboot">Reboot</string>
 
     <!-- label for item that enables silent mode in phone options dialog -->
@@ -2359,21 +2352,6 @@
     <string name="media_shared" product="default">SD card is currently in use by a computer.</string>
     <!-- Text for message for an unknown external media state [CHAR LIMIT=NONE] -->
     <string name="media_unknown_state">External media in unknown state.</string>
-
-    <!-- Network positioning notification ticker. The name of the user (e.g. John Doe) who sent
-         the request is shown as a dynamic string. -->
-    <string name="gpsNotifTicker">Location request from <xliff:g id="name">%s</xliff:g></string>
-    <!-- Network positioning notification and verification title to inform the user about
-         an incoming location request. -->
-    <string name="gpsNotifTitle">Location request</string>
-    <!-- Network positioning notification message. The name of the user (e.g. John Doe) and
-         service (SUPL-service) who sent the request is shown as dynamic strings.
-         Translation should not be longer than master text. -->
-    <string name="gpsNotifMessage">Requested by <xliff:g id="name">%1$s</xliff:g> (<xliff:g id="service" example="SUPL-service">%2$s</xliff:g>)</string>
-    <!-- Network positioning verification Yes. Button to push to share location information. -->
-    <string name="gpsVerifYes">Yes</string>
-    <!-- Network positioning verification No. Button to push to deny sharing of location
-         information. -->
-    <string name="gpsVerifNo">No</string>
     <string name="app_killed_message">Application killed</string>
+
 </resources>

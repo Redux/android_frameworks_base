@@ -660,9 +660,10 @@ void MyVorbisExtractor::parseFileMetaData() {
     } kMap[] = {
         { "TITLE", kKeyTitle },
         { "ARTIST", kKeyArtist },
+        { "ALBUMARTIST", kKeyAlbumArtist },
+        { "ALBUM ARTIST", kKeyAlbumArtist },
+        { "COMPILATION", kKeyCompilation },
         { "ALBUM", kKeyAlbum },
-		{ "ALBUMARTIST", kKeyAlbumArtist },
-		{ "ALBUM ARIST", kKeyAlbumArtist },
         { "COMPOSER", kKeyComposer },
         { "GENRE", kKeyGenre },
         { "AUTHOR", kKeyAuthor },

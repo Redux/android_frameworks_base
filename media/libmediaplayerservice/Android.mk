@@ -11,7 +11,7 @@ LOCAL_SRC_FILES:=               \
     MediaPlayerService.cpp      \
     MetadataRetrieverClient.cpp \
     TestPlayerStub.cpp          \
-    FLACPlayer.cpp              \
+    FLACPlayer.cpp		\
     MidiMetadataRetriever.cpp   \
     MidiFile.cpp                \
     StagefrightPlayer.cpp       \
@@ -25,7 +25,7 @@ LOCAL_SHARED_LIBRARIES :=     		\
 	libcutils             			\
 	libutils              			\
 	libbinder             			\
-        libFLAC                                 \
+	libFLAC					\
 	libvorbisidec         			\
 	libsonivox            			\
 	libmedia              			\
@@ -58,7 +58,7 @@ LOCAL_C_INCLUDES :=                                                 \
 	$(TOP)/frameworks/base/include/media/stagefright/openmax \
 	$(TOP)/frameworks/base/media/libstagefright/include             \
 	$(TOP)/frameworks/base/media/libstagefright/rtsp                \
-        $(TOP)/external/flac/include                                    \
+	$(TOP)/external/flac/include					\
         $(TOP)/external/tremolo/Tremolo
 
 LOCAL_MODULE:= libmediaplayerservice

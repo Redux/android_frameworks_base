@@ -197,20 +197,20 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
                 mSilentModeToggle,
                 // next: airplane mode
                 mAirplaneModeOn,
-                // next: reboot
-                new SinglePressAction(com.android.internal.R.drawable.ic_lock_reboot, R.string.global_action_reboot) {
-                    public void onPress() {
-                        ShutdownThread.reboot(mContext, null, true);
-                    }
-
-                    public boolean showDuringKeyguard() {
-                        return true;
-                    }
-
-                    public boolean showBeforeProvisioning() {
-                        return true;
-                    }
-                },
+				// next: reboot
+				new SinglePressAction(com.android.internal.R.drawable.ic_lock_reboot, R.string.global_action_reboot) {
+					public void onPress() {
+						ShutdownThread.reboot(mContext, null, true);
+					}
+									
+					public boolean showDuringKeyguard() {
+						return true;
+					}
+									
+					public boolean showBeforeProvisioning() {
+						return true;
+					}
+				},
                 // last: power off
                 new SinglePressAction(
                         com.android.internal.R.drawable.ic_lock_power_off,
@@ -235,8 +235,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         final AlertDialog.Builder ab = new AlertDialog.Builder(mContext);
 
         ab.setAdapter(mAdapter, this)
-                .setInverseBackgroundForced(true)
-                .setTitle(R.string.global_actions);
+                .setInverseBackgroundForced(true);
 
         final AlertDialog dialog = ab.create();
         dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_DIALOG);
@@ -263,6 +262,7 @@ class GlobalActions implements DialogInterface.OnDismissListener, DialogInterfac
         } else {
             mDialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_DIALOG);
         }
+        mDialog.setTitle(R.string.global_actions);
     }
 
 

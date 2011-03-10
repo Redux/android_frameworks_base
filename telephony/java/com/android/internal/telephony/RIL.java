@@ -225,8 +225,15 @@ public final class RIL extends BaseCommands implements CommandsInterface {
     private Context mContext;
     WakeLock mWakeLock;
     int mWakeLockTimeout;
+    // The number of requests pending to be sent out, it increases before calling
+    // EVENT_SEND and decreases while handling EVENT_SEND. It gets cleared while
+    // WAKE_LOCK_TIMEOUT occurs.
     int mRequestMessagesPending;
-	int mRequestMessagesWaiting;
+    // The number of requests sent out but waiting for response. It increases while
+    // sending request and decreases while handling response. It should match
+    // mRequestList.size() unless there are requests no replied while
+    // WAKE_LOCK_TIMEOUT occurs.
+    int mRequestMessagesWaiting;
 
     // Is this the first radio state change?
     private boolean mInitialRadioStateChange = true;
@@ -309,21 +316,19 @@ public final class RIL extends BaseCommands implements CommandsInterface {
                         if (s == null) {
                             rr.onError(RADIO_NOT_AVAILABLE, null);
                             rr.release();
-							if (mRequestMessagesPending > 0) {
-								mRequestMessagesPending--;
-							}
+                            if (mRequestMessagesPending > 0)
+                                mRequestMessagesPending--;
                             alreadySubtracted = true;
                             return;
                         }
 
                         synchronized (mRequestsList) {
                             mRequestsList.add(rr);
-							mRequestMessagesWaiting++;
+                            mRequestMessagesWaiting++;
                         }
 
-						if (mRequestMessagesPending > 0) {
-							mRequestMessagesPending--;
-						}
+                        if (mRequestMessagesPending > 0)
+                            mRequestMessagesPending--;
                         alreadySubtracted = true;
 
                         byte[] data;
@@ -378,37 +383,52 @@ public final class RIL extends BaseCommands implements CommandsInterface {
                     // not getting a response and  release the wake lock.
                     synchronized (mWakeLock) {
                         if (mWakeLock.isHeld()) {
-							// The timer of WAKE_LOCK_TIMEOUT is reset with each
-							// new send request. So when WAKE_LOCK_TIMEOUT occurs
-							// all requests in mRequestsList already waited at
-							// least DEFAULT_WAKE_LOCK_TIMEOUT but no response.
-							// Reset mRequestMessagesWaiting to enable
-							// releaseWakeLockIfDone().
-							//
-							// Note: Keep mRequestsList so that delayed response
-							// can still be handled when response finally comes.
-							if (mRequestMessagesWaiting != 0) {
-									Log.d(LOG_TAG, "NOTE: mReqWaiting is NOT 0 but "
-										  + mRequestMessagesWaiting + " at TIMEOUT, reset!"
-										  + " There still msg waiting for response");
-								
-								mRequestMessagesWaiting = 0;
-							}
-							// mRequestMessagesPending shows how many
-							// requests are waiting to be sent (and before
-							// to be added in request list) since star the
-							// WAKE_LOCK_TIMEOUT timer. Since WAKE_LOCK_TIMEOUT
-							// is the expected tiem to get response, all requests
-							// should already be sent out while TIMEOUT occurs.
-							if (mRequestMessagesPending != 0) {
-									Log.e(LOG_TAG, "ERROR: mReqPending is NOT 0 but, "
-										  + mRequestMessagesPending + " at TIMEOUT, reset!");
-								mRequestMessagesPending = 0;
-							}
+                            // The timer of WAKE_LOCK_TIMEOUT is reset with each
+                            // new send request. So when WAKE_LOCK_TIMEOUT occurs
+                            // all requests in mRequestList already waited at
+                            // least DEFAULT_WAKE_LOCK_TIMEOUT but no response.
+                            // Reset mRequestMessagesWaiting to enable
+                            // releaseWakeLockIfDone().
+                            //
+                            // Note: Keep mRequestList so that delayed response
+                            // can still be handled when response finally comes.
+                            if (mRequestMessagesWaiting != 0) {
+                                Log.d(LOG_TAG, "NOTE: mReqWaiting is NOT 0 but"
+                                        + mRequestMessagesWaiting + " at TIMEOUT, reset!"
+                                        + " There still msg waitng for response");
+
+                                mRequestMessagesWaiting = 0;
+
+                                if (RILJ_LOGD) {
+                                    synchronized (mRequestsList) {
+                                        int count = mRequestsList.size();
+                                        Log.d(LOG_TAG, "WAKE_LOCK_TIMEOUT " +
+                                                " mRequestList=" + count);
+
+                                        for (int i = 0; i < count; i++) {
+                                            rr = mRequestsList.get(i);
+                                            Log.d(LOG_TAG, i + ": [" + rr.mSerial + "] "
+                                                    + requestToString(rr.mRequest));
+                                        }
+                                    }
+                                }
+                            }
+                            // mRequestMessagesPending shows how many
+                            // requests are waiting to be sent (and before
+                            // to be added in request list) since star the
+                            // WAKE_LOCK_TIMEOUT timer. Since WAKE_LOCK_TIMEOUT
+                            // is the expected time to get response, all requests
+                            // should already sent out (i.e.
+                            // mRequestMessagesPending is 0 )while TIMEOUT occurs.
+                            if (mRequestMessagesPending != 0) {
+                                Log.e(LOG_TAG, "ERROR: mReqPending is NOT 0 but"
+                                        + mRequestMessagesPending + " at TIMEOUT, reset!");
+                                mRequestMessagesPending = 0;
+
+                            }
                             mWakeLock.release();
                         }
                     }
-
                     break;
             }
         }
@@ -575,7 +595,7 @@ public final class RIL extends BaseCommands implements CommandsInterface {
                 RILRequest.resetSerial();
 
                 // Clear request list on close
-				clearRequestsList(RADIO_NOT_AVAILABLE, false);
+                clearRequestsList(RADIO_NOT_AVAILABLE, false);
             }} catch (Throwable tr) {
                 Log.e(LOG_TAG,"Uncaught exception", tr);
             }
@@ -621,7 +641,7 @@ public final class RIL extends BaseCommands implements CommandsInterface {
         mWakeLockTimeout = SystemProperties.getInt(TelephonyProperties.PROPERTY_WAKE_LOCK_TIMEOUT,
                 DEFAULT_WAKE_LOCK_TIMEOUT);
         mRequestMessagesPending = 0;
-		mRequestMessagesWaiting = 0;
+        mRequestMessagesWaiting = 0;
 
         mContext = context;
 
@@ -2071,34 +2091,34 @@ public final class RIL extends BaseCommands implements CommandsInterface {
         releaseWakeLockIfDone();
     }
 
-	/**
-	 * Release each request in mRequestsList then clear the list
-	 * @param error is the RILL_Errno sent back
-	 * @param loggable true means to print all requests in mRequestsList
-	 */
-	private void clearRequestsList(int error, boolean loggable) {
-		RILRequest rr;
-		synchronized (mRequestsList) {
-			int count = mRequestsList.size();
-			if (RILJ_LOGD && loggable) {
-				Log.d(LOG_TAG, "WAKE_LOCK_TIMEOUT " +
-						" mReqPending=" + mRequestMessagesPending +
-						" mRequestsList=" + count);
-			}
+    /**
+     * Release each request in mReqeustsList then clear the list
+     * @param error is the RIL_Errno sent back
+     * @param loggable true means to print all requests in mRequestslist
+     */
+    private void clearRequestsList(int error, boolean loggable) {
+        RILRequest rr;
+        synchronized (mRequestsList) {
+            int count = mRequestsList.size();
+            if (RILJ_LOGD && loggable) {
+                Log.d(LOG_TAG, "WAKE_LOCK_TIMEOUT " +
+                        " mReqPending=" + mRequestMessagesPending +
+                        " mRequestList=" + count);
+            }
 
-			for (int i = 0; i < count; i++) {
-				rr = mRequestsList.get(i);
-				if (RILJ_LOGD && loggable) {
-					Log.d(LOG_TAG, i + ": [" + rr.mSerial + "] " +
-					requestToString(rr.mRequest));
-				}
-				rr.onError(error, null);
-				rr.release();
-			}
-			mRequestsList.clear();
-			mRequestMessagesWaiting = 0;
-		}
-	}
+            for (int i = 0; i < count ; i++) {
+                rr = mRequestsList.get(i);
+                if (RILJ_LOGD && loggable) {
+                    Log.d(LOG_TAG, i + ": [" + rr.mSerial + "] " +
+                            requestToString(rr.mRequest));
+                }
+                rr.onError(error, null);
+                rr.release();
+            }
+            mRequestsList.clear();
+            mRequestMessagesWaiting = 0;
+        }
+    }
 
     private RILRequest findAndRemoveRequestFromList(int serial) {
         synchronized (mRequestsList) {
@@ -2107,10 +2127,9 @@ public final class RIL extends BaseCommands implements CommandsInterface {
 
                 if (rr.mSerial == serial) {
                     mRequestsList.remove(i);
-					if (mRequestMessagesWaiting > 0) {
-						mRequestMessagesWaiting--;
-					}
-					return rr;
+                    if (mRequestMessagesWaiting > 0)
+                        mRequestMessagesWaiting--;
+                    return rr;
                 }
             }
         }

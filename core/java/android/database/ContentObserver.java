@@ -79,8 +79,9 @@ public abstract class ContentObserver {
 		
 		public void onChangeUri(Uri uri, boolean selfChange) {
 			ContentObserver contentObserver = mContentObserver;
-			if (contentObserver != null)
+			if (contentObserver != null) {
 				contentObserver.dispatchChange(uri, selfChange);
+			}
 		}
 
         public void releaseContentObserver() {
@@ -157,7 +158,7 @@ public abstract class ContentObserver {
     }
 	
 	/** @hide */
-	public final void dispatchChange (Uri uri, boolean selfChange) {
+	public final void dispatchChange(Uri uri, boolean selfChange) {
 		if (mHandler == null) {
 			onChangeUri(uri, selfChange);
 		} else {

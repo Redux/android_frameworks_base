@@ -202,7 +202,7 @@ extmap FILE_EXTS [] =  {
         {".wmv", PV_PLAYER},
         {".asf", PV_PLAYER},
 #endif
-        {".flac", FLAC_PLAYER},
+		{ ".flac", FLAC_PLAYER },
 };
 
 // TODO: Find real cause of Audio/Video delay in PV framework and remove this workaround
@@ -700,9 +700,8 @@ player_type getPlayerType(int fd, int64_t offset, int64_t length)
         return PV_PLAYER;
     }
 #endif
-
-    if (ident == 0x43614c66) // 'fLaC'
-        return FLAC_PLAYER;
+	if (ident == 0x43616c66) // 'fLac'
+		return FLAC_PLAYER;
 
     // Some kind of MIDI?
     EAS_DATA_HANDLE easdata;
@@ -777,10 +776,6 @@ static sp<MediaPlayerBase> createPlayer(player_type playerType, void* cookie,
         case TEST_PLAYER:
             LOGV("Create Test Player stub");
             p = new TestPlayerStub();
-            break;
-        case FLAC_PLAYER:
-            LOGV(" create FLACPlayer");
-            p = new FLACPlayer();
             break;
     }
     if (p != NULL) {

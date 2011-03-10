@@ -101,7 +101,7 @@ final class NativeDaemonConnector implements Runnable {
             InputStream inputStream = socket.getInputStream();
             mOutputStream = socket.getOutputStream();
 			
-			mCallbacks.onDaemonConnected();
+            mCallbacks.onDaemonConnected();
 
             byte[] buffer = new byte[BUFFER_SIZE];
             int start = 0;
@@ -134,12 +134,12 @@ final class NativeDaemonConnector implements Runnable {
                                             "Error handling '%s'", event), ex);
                                 }
                             } else {
-								try {
-									mResponseQueue.put(event);
-								} catch (InterruptedException ex) {
-									Slog.e(TAG, "Failed to put response onto queue", ex);
-								}
-							}
+                                try {
+                                    mResponseQueue.put(event);
+                                } catch (InterruptedException ex) {
+                                    Slog.e(TAG, "Failed to put response onto queue", ex);
+                                }
+                            }
                         } catch (NumberFormatException nfe) {
                             Slog.w(TAG, String.format("Bad msg (%s)", event));
                         }
@@ -221,7 +221,7 @@ final class NativeDaemonConnector implements Runnable {
      */
     public synchronized ArrayList<String> doCommand(String cmd)
             throws NativeDaemonConnectorException  {
-		mResponseQueue.clear();
+        mResponseQueue.clear();
         sendCommand(cmd);
 
         ArrayList<String> response = new ArrayList<String>();

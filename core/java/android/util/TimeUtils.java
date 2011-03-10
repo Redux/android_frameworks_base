@@ -158,7 +158,7 @@ public class TimeUtils {
     static private int printField(char[] formatStr, int amt, char suffix, int pos,
             boolean always, int zeropad) {
         if (always || amt > 0) {
-			final int startPos = pos;
+            final int startPos = pos;
             if ((always && zeropad >= 3) || amt > 99) {
                 int dig = amt/100;
                 formatStr[pos] = (char)(dig + '0');

@@ -1143,8 +1143,7 @@ public class KeyguardViewMediator implements KeyguardViewCallback,
         }
     }
 
-	private BroadcastReceiver mMusicReceiver = new BroadcastReceiver() {
-
+	private BroadcastReceiver mMusicReceiver = new BroadcastReceiver () {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();

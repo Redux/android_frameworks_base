@@ -53,7 +53,7 @@ public:
     virtual status_t reset();
     virtual status_t getMaxAmplitude(int *max);
     virtual status_t dump(int fd, const Vector<String16>& args) const;
-    virtual status_t setCameraParameters(const String8& params);
+	virtual status_t setCameraParameters(const String8& params);
 
 private:
     status_t doStop();
