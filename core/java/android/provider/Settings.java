@@ -1396,6 +1396,15 @@ public final class Settings {
          */
         public static final String NOTIFICATIONS_USE_RING_VOLUME =
             "notifications_use_ring_volume";
+		
+		/**
+		 * Whether notifications should request audio focus. Could be disabled
+		 * if a users favourite app behaves badly when audio focus is requested.
+		 * Value is boolean.
+		 *
+		 * @hide
+		 */
+		public static final String NOTIFICATIONS_AUDIO_FOCUS = "notifications_audio_focus";
 
         /**
          * Whether silent mode should allow vibration feedback. This is used
