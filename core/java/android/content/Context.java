@@ -1334,7 +1334,7 @@ public abstract class Context {
 	
 	/**
 	 * Use with {@link #getSystemService} to retrieve a
-	 * {@link #android.app.ProfileManager} for setting
+	 * ProfileManager for setting
 	 * notification profiles.
 	 *
 	 * @see #getSystemService
